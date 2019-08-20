@@ -429,6 +429,104 @@ hugo的官方安装使用教程： <https://www.gohugo.org/>
 
 - <https://jianshu.com/p/f8a55b972972>
 
+关于已经创建了某个目录，但是想将这个目录及其下的内容初始化为一个新的仓库并添加为上级目录的仓库的子模块。做法是：
+
+```shell
+# 先查看当前的远程仓库列表
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git remote -v
+even	git@github.com:azd1997/hugo-theme-even.git (fetch)
+even	git@github.com:azd1997/hugo-theme-even.git (push)
+origin	git@github.com:azd1997/EigerBlog.git (fetch)
+origin	git@github.com:azd1997/EigerBlog.git (push)
+post	git@github.com:azd1997/eigerNotes.git (fetch)
+post	git@github.com:azd1997/eigerNotes.git (push)
+
+# 我想将已有的website目录转为仓库，那么首先需要为其创建远程仓库并将其内容同步到远程仓库中。
+# 然后需要删除本地的该目录。
+
+# 如果不删除直接执行子模块添加操作，结果是：
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git submodule add git@github.com:azd1997/hugo-theme-even.git website
+'website' already exists in the index
+# 这是因为website原本就已经在git记录里了，所以无法添加为子模块。
+
+# 我们删掉website本地目录后
+
+# 对总仓库重新推送，更新状态，这样的话总仓库的本地和远程就都没有website了。
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git add .
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git commit -m '333'
+[master 460bdeb] 333
+ 3 files changed, 2 insertions(+), 2 deletions(-)
+ create mode 160000 themes/even
+ delete mode 160000 website
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git push
+Counting objects: 4, done.
+Delta compression using up to 4 threads.
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (4/4), 405 bytes | 405.00 KiB/s, done.
+Total 4 (delta 2), reused 1 (delta 0)
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To github.com:azd1997/EigerBlog.git
+   0556fdc..460bdeb  master -> master
+
+# 现在可以来添加website为子模块了
+# 添加子模块的命令是：
+# git submodule add URL PATH
+# URL为要添加为子模块的远程仓库，PATH为远程仓库拉取到本地的相对路径
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git submodule add git@github.com:azd1997/azd1997.github.io.git website
+Cloning into '/home/eiger/Desktop/EigerBlog/website'...
+remote: Enumerating objects: 1031, done.
+remote: Counting objects: 100% (1031/1031), done.
+remote: Compressing objects: 100% (441/441), done.
+remote: Total 1031 (delta 499), reused 917 (delta 388), pack-reused 0
+Receiving objects: 100% (1031/1031), 5.38 MiB | 11.00 KiB/s, done.
+Resolving deltas: 100% (499/499), done.
+
+# 为拉取到本地的website仓库设置远程主机，该主机在本地的名字叫website，用于与其他远程主机进行区别。
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git remote add website git@github.com:azd1997/azd1997.github.io.git
+
+# 再来看看远程主机列表
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git remote -v
+even	git@github.com:azd1997/hugo-theme-even.git (fetch)
+even	git@github.com:azd1997/hugo-theme-even.git (push)
+origin	git@github.com:azd1997/EigerBlog.git (fetch)
+origin	git@github.com:azd1997/EigerBlog.git (push)
+post	git@github.com:azd1997/eigerNotes.git (fetch)
+post	git@github.com:azd1997/eigerNotes.git (push)
+website	git@github.com:azd1997/azd1997.github.io.git (fetch)
+website	git@github.com:azd1997/azd1997.github.io.git (push)
+
+# 最后记得把总仓库状态给更新一下。
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git add .
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git commit -m '444'
+[master b9310c1] 444
+ 2 files changed, 4 insertions(+)
+ create mode 160000 website
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git push
+Counting objects: 3, done.
+Delta compression using up to 4 threads.
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 376 bytes | 376.00 KiB/s, done.
+Total 3 (delta 2), reused 0 (delta 0)
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To github.com:azd1997/EigerBlog.git
+   460bdeb..b9310c1  master -> master
+
+```
+
+添加完子模块后总仓库根目录下有`.gitmodules`文件，内容为：
+
+```toml
+[submodule "themes/even"]
+        path = themes/even
+        url = git@github.com:azd1997/hugo-theme-even.git
+[submodule "content/post"]
+        path = content/post
+        url = https://github.com/azd1997/eigerNotes
+[submodule "website"]
+        path = website
+        url = git@github.com:azd1997/azd1997.github.io.git
+```
+
 安装hugo：
 
 ```shell
@@ -476,7 +574,17 @@ archetypes   content  layouts   mycustom  resources  themes
 config.toml  data     Makefile  public    static     website
 ```
 
-因为在website目录下有`.git`文件夹和`CNAME`文件是不能被删除的，这导致每次从public文件夹下复制到website时不能直接全选粘贴，这其实有些麻烦。
+因为在website目录下有`.git`文件和`CNAME`文件是不能被删除的，这导致每次从public文件夹下复制到website时不能直接全选粘贴，这其实有些麻烦。
+
+为什么是`.git`文件而不是文件夹？
+
+可以看下`website/.git`内容：
+
+```toml
+gitdir: ../.git/modules/website
+```
+
+也就是说，作为子模块添加后，其变化是记录在总仓库的`.git`文件夹的，子模块只需要根据其下的`.git`中的`gitdir`找到其记录位置就行。所以说其实子模块下这个文件的内容是不会变的。
 
 为此，直接先写一个Makefile文件(参考[Makefile编写](#13-makefile%e7%bc%96%e5%86%99))将所有命令整合一下：
 
@@ -488,7 +596,7 @@ default:
         @echo '网站文件生成在public/下';
         # 临时保存.git与CNAME
         cp -fp website/CNAME mycustom/tmp/;
-        cp -rpf website/.git mycustom/tmp/;
+        cp -fp website/.git mycustom/tmp/;
         @echo 'CNAME、.git已备份至mycustom/tmp/下';
         pwd;
         # 清空原website文件，将所需文件复制入website
@@ -499,16 +607,27 @@ default:
         cp -fp mycustom/tmp/CNAME website/;
         @echo 'website文件已全部生成';
         pwd;
-        # now=`date`;\
-        # echo "make love $${now}";
         # git提交至远程仓库，更新博客
         # CUR_DATE = $(shell date '+%Y-%m-%d');
         @date=`date +%Y-%m-%d`;\
                 echo "$${date}";\
+                cd content/post/;pwd;\
+                git add .;\
+                git commit -m "$${date}  update my blog notes";\
+                git push;
+        @date=`date +%Y-%m-%d`;\
+                echo "$${date}";\
                 cd website/;pwd;\
                 git add .;\
-                git commit -m "$${date}  update my blog site:  https://eiger.me";\
+                git commit -m "$${date}  update my blog site eiger.me";\
                 git push;
+        @date=`date +%Y-%m-%d`;\
+                echo "$${date}";\
+                pwd;\
+                git add .;\
+                git commit -m "$${date}  update my blog";\
+                git push;
+
         # 注意：必须是双引号括起字符串，双$加花括号包住变量
         pwd;
         @echo '博客网站https://eiger.me更新完成';
