@@ -527,6 +527,14 @@ To github.com:azd1997/EigerBlog.git
         url = git@github.com:azd1997/azd1997.github.io.git
 ```
 
+注意！我这里post子模块用了http连接，所以每次都需要输入github用户名和密码，很烦，但这是我不小心设成这样的。怎么解决呢？
+
+有两种方法：
+
+1. 直接修改`.gitmodules`文件，将post的url改为ssh链接，类似于其他两个的那种（我觉得是可以的，而且很方便，但是我没试过）
+
+2. 删除post子模块，重新添加子模块。这个比较繁琐，主要是先将post子模块删除（在本地删除post文件夹、`.gitmodules`删除post部分，`.git/modules/content/post`删除，移除总仓库的`post`远程主机），然后重新添加子模块。
+
 安装hugo：
 
 ```shell
@@ -596,14 +604,14 @@ default:
         @echo '网站文件生成在public/下';
         # 临时保存.git与CNAME
         cp -fp website/CNAME mycustom/tmp/;
-        cp -fp website/.git mycustom/tmp/;
+        cp -fp website/.git mycustom/tmp/123.txt;
         @echo 'CNAME、.git已备份至mycustom/tmp/下';
         pwd;
         # 清空原website文件，将所需文件复制入website
         cd website;pwd;rm -rf *;cd ../;
         @echo 'website下内容已清空';
         cp -rf public/. website;
-        cp -rpf mycustom/tmp/.git website/;
+        cp -fp mycustom/tmp/123.txt website/.git;
         cp -fp mycustom/tmp/CNAME website/;
         @echo 'website文件已全部生成';
         pwd;
@@ -689,4 +697,6 @@ git
 
 参考：<https://blog.csdn.net/qq_25987491/article/details/81364461>
 
+我的安装记录：
 
+安装deepine-wine-for-ubuntu
