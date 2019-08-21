@@ -55,7 +55,6 @@ keywords: ["mainflux", "docker", "protoc"]
     - [13.4 Storage](#134-storage)
       - [13.4.1 Writers](#1341-writers)
       - [13.4.2 Readers](#1342-readers)
-      - [13.4.2 Reader](#1342-reader)
     - [13.5 LoRa](#135-lora)
     - [13.6 安全通信](#136-%e5%ae%89%e5%85%a8%e9%80%9a%e4%bf%a1)
       - [13.6.1 安全的PostgreSQL连接](#1361-%e5%ae%89%e5%85%a8%e7%9a%84postgresql%e8%bf%9e%e6%8e%a5)
@@ -4805,8 +4804,6 @@ mongodb-reader对外暴露8903端口来提供`HTTP API`<https://github.com/mainf
 ```shell
 curl -s -S -i  -H "Authorization: <thing_token>" http://localhost:8904/channels/<channel_id>/messages
 ```
-
-#### 13.4.2 Reader
 
 ### 13.5 LoRa
 
