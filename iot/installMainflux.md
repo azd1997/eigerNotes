@@ -3266,8 +3266,7 @@ eiger@eiger-ThinkPad-X1-Carbon-3rd:~$
 这里我们注意nginx服务未开启成功，但是列表中mainflux-ui使用了80/tcp端口。从mainflux的架构图可以看出：
 
 <!--博客生成时使用/images开头，编辑器中使用/static开头-->
-<!--![mainflux-architecture](/images/mainflux-architecture.jpg)-->
-
+![mainflux-architecture](/images/mainflux-architecture.jpg)
 ![mainflux-architecture](../../../static/images/mainflux-architecture.jpg)
 
 nginx被用来做负载均衡，但是mainflux-ui也用到了nginx，但它只是用nginx做一个简单的服务器，另外我们去查看docker-compose.yml也可以看到services下nginx的environment项是MF_UI_PORT，这进一步佐证了mainflux-ui使用nginx作web服务器。
@@ -3808,7 +3807,7 @@ aef24619a59a        redis:5.0-alpine                "docker-entrypoint.s…"   1
 
 我们已经启动了mainflux-ui，那么就可以在浏览器查看下我们的mainflux-ui了，浏览器输入127.0.0.1:3000，得到如下结果：
 
-<!--![mainflux-ui-01](/images/mainflux-ui-01.png)-->
+![mainflux-ui-01](/images/mainflux-ui-01.png)
 ![mainflux-ui-01](../../../static/images/mainflux-ui-01.png)
 
 ### 12.2 安装mainflux-cli
@@ -4072,7 +4071,7 @@ mainflux-users  | {"level":"info","message":"Method register for user 374192922@
 
 接下来我在mainflux-ui尝试登陆却出错了：
 
-<!--![mainflux-ui-02](/images/mainflux-ui-02.png)-->
+![mainflux-ui-02](/images/mainflux-ui-02.png)
 ![mainflux-ui-02](../../../static/images/mainflux-ui-02.png)
 
 同时mainflux系统终端输出：
@@ -4238,7 +4237,7 @@ docker0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
 
 说明docker ip确实是172.17.0.1。现在我们试试浏览器访问172.17.0.1:3000：
 
-<!--![mainflux-ui-03](/images/mainflux-ui-03.png)-->
+![mainflux-ui-03](/images/mainflux-ui-03.png)
 ![mainflux-ui-03](../../../static/images/mainflux-ui-03.png)
 
 这时mainflux系统输出为：
@@ -4253,7 +4252,7 @@ mainflux-ui     | 172.18.0.1 - - [19/Aug/2019:05:21:12 +0000] "GET /favicon.ico 
 
 这时注意到终端其实输出的ip为172.18.0.1，那么浏览器输入172.18.0.1:3000试试？
 
-<!--![mainflux-ui-04](/images/mainflux-ui-04.png)-->
+![mainflux-ui-04](/images/mainflux-ui-04.png)
 ![mainflux-ui-04](../../../static/images/mainflux-ui-04.png)
 
 也能行！
@@ -4296,7 +4295,7 @@ mainflux-ui     | 172.18.0.1 - - [19/Aug/2019:05:21:12 +0000] "GET /favicon.ico 
 
 这里放一下`172.18.0.1`的登陆成功页面：
 
-<!--![mainflux-ui-06](/images/mainflux-ui-06.png)-->
+![mainflux-ui-06](/images/mainflux-ui-06.png)
 ![mainflux-ui-06](../../../static/images/mainflux-ui-06.png)
 
 ```shell
@@ -4325,7 +4324,7 @@ mainflux-nginx  | 172.18.0.1 - - [19/Aug/2019:06:02:53 +0000] "GET /things?offse
 
 注册成功了，我们登录进去看看：
 
-<!--![mainflux-ui-07](/images/mainflux-ui-07.png)-->
+![mainflux-ui-07](/images/mainflux-ui-07.png)
 ![mainflux-ui-07](../../../static/images/mainflux-ui-07.png)
 
 是没有问题的。
@@ -4372,7 +4371,7 @@ mainflux-nginx  | 172.18.0.1 - - [19/Aug/2019:06:02:53 +0000] "GET /things?offse
 
 先在mainflux-ui界面登录该账号，便于查看变化。
 
-<!--![mainflux-ui-08](/images/mainflux-ui-08.png)-->
+![mainflux-ui-08](/images/mainflux-ui-08.png)
 ![mainflux-ui-08](../../../static/images/mainflux-ui-08.png)
 
 现在我们可以看到是没有任何消息的。
@@ -4473,7 +4472,7 @@ mainflux-nginx  | 172.18.0.1 - - [19/Aug/2019:09:50:15 +0000] "POST /http/channe
 
 mainflux架构如图：
 
-<!--![mainflux-architeture](/images/mainflux-architecture.jpg)-->
+![mainflux-architeture](/images/mainflux-architecture.jpg)
 ![mainflux-architecture](../../../static/images/mainflux-architecture.jpg)
 
 mainflux有三个主要的模型：user、thing、channel。user代表管理员，thing映射实际连接的设备，channel指一个通信频道，也可以理解为mqtt中的topic主题，连接到同一个channel的设备可以获取这个channel中的信息，也就是说实现了互相通信。

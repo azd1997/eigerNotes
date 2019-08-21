@@ -543,7 +543,7 @@ To github.com:azd1997/EigerBlog.git
         url = git@github.com:azd1997/hugo-theme-even.git
 [submodule "content/post"]
         path = content/post
-        url = https://github.com/azd1997/eigerNotes
+        url = git@github.com:azd1997/eigerNotes.git
 [submodule "website"]
         path = website
         url = git@github.com:azd1997/azd1997.github.io.git
@@ -677,13 +677,13 @@ eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ ls -a
 
 如果这两项填错，博客中评论区会是这样的(评论失败)：
 
-<!--![hugo-valie-01](/images/hugo-valine-01.png)-->
-![hugo-valine-01](../../../static/images/hugo-valine-01.png)
+![hugo-valine-01](/images/hugo-valine-01.png)
+<!-- ![hugo-valine-01](../../../static/images/hugo-valine-01.png) -->
 
 如果输对了的话，评论区是这样的：
 
-<!--![hugo-valine-02](/images/hugo-valine-02.png)-->
-![hugo-valine-02](../../../static/images/hugo-valine-02.png)
+![hugo-valine-02](/images/hugo-valine-02.png)
+<!-- ![hugo-valine-02](../../../static/images/hugo-valine-02.png) -->
 
 关于头像配置，参考：<https://valine.js.org/configuration.html>
 
