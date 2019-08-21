@@ -434,12 +434,12 @@ hugo的官方安装使用教程： <https://www.gohugo.org/>
 ```shell
 # 先查看当前的远程仓库列表
 eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git remote -v
-even	git@github.com:azd1997/hugo-theme-even.git (fetch)
-even	git@github.com:azd1997/hugo-theme-even.git (push)
-origin	git@github.com:azd1997/EigerBlog.git (fetch)
-origin	git@github.com:azd1997/EigerBlog.git (push)
-post	git@github.com:azd1997/eigerNotes.git (fetch)
-post	git@github.com:azd1997/eigerNotes.git (push)
+even    git@github.com:azd1997/hugo-theme-even.git (fetch)
+even    git@github.com:azd1997/hugo-theme-even.git (push)
+origin  git@github.com:azd1997/EigerBlog.git (fetch)
+origin  git@github.com:azd1997/EigerBlog.git (push)
+post    git@github.com:azd1997/eigerNotes.git (fetch)
+post    git@github.com:azd1997/eigerNotes.git (push)
 
 # 我想将已有的website目录转为仓库，那么首先需要为其创建远程仓库并将其内容同步到远程仓库中。
 # 然后需要删除本地的该目录。
@@ -486,14 +486,14 @@ eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git remote add website g
 
 # 再来看看远程主机列表
 eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git remote -v
-even	git@github.com:azd1997/hugo-theme-even.git (fetch)
-even	git@github.com:azd1997/hugo-theme-even.git (push)
-origin	git@github.com:azd1997/EigerBlog.git (fetch)
-origin	git@github.com:azd1997/EigerBlog.git (push)
-post	git@github.com:azd1997/eigerNotes.git (fetch)
-post	git@github.com:azd1997/eigerNotes.git (push)
-website	git@github.com:azd1997/azd1997.github.io.git (fetch)
-website	git@github.com:azd1997/azd1997.github.io.git (push)
+even    git@github.com:azd1997/hugo-theme-even.git (fetch)
+even    git@github.com:azd1997/hugo-theme-even.git (push)
+origin  git@github.com:azd1997/EigerBlog.git (fetch)
+origin  git@github.com:azd1997/EigerBlog.git (push)
+post    git@github.com:azd1997/eigerNotes.git (fetch)
+post    git@github.com:azd1997/eigerNotes.git (push)
+website git@github.com:azd1997/azd1997.github.io.git (fetch)
+website git@github.com:azd1997/azd1997.github.io.git (push)
 
 # 最后记得把总仓库状态给更新一下。
 eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ git add .
@@ -534,6 +534,20 @@ To github.com:azd1997/EigerBlog.git
 1. 直接修改`.gitmodules`文件，将post的url改为ssh链接，类似于其他两个的那种（我觉得是可以的，而且很方便，但是我没试过）
 
 2. 删除post子模块，重新添加子模块。这个比较繁琐，主要是先将post子模块删除（在本地删除post文件夹、`.gitmodules`删除post部分，`.git/modules/content/post`删除，移除总仓库的`post`远程主机），然后重新添加子模块。
+
+我采用了第二种方法，完成后我的`.gitmodules`文件内容变成了：
+
+```toml
+[submodule "themes/even"]
+        path = themes/even
+        url = git@github.com:azd1997/hugo-theme-even.git
+[submodule "content/post"]
+        path = content/post
+        url = https://github.com/azd1997/eigerNotes
+[submodule "website"]
+        path = website
+        url = git@github.com:azd1997/azd1997.github.io.git
+```
 
 安装hugo：
 
@@ -600,6 +614,7 @@ gitdir: ../.git/modules/website
 # `make`
 default:
         # 生成网站文件
+        cd public;pwd;rm -rf *;cd ../;
         hugo;
         @echo '网站文件生成在public/下';
         # 临时保存.git与CNAME
@@ -650,6 +665,29 @@ eiger@eiger-ThinkPad-X1-Carbon-3rd:~/Desktop/EigerBlog$ ls -a
 ```
 
 现在只需在根目录下执行`make`即可完成博客更新操作。
+
+启用评论系统：
+
+我启用了valine作为评论系统，关于如何启用，参考
+
+- <https://valine.js.org/quickstart.html>
+- <https://www.smslit.top/2018/07/08/hugo-valine/>
+
+值得注意的是AppId和AppKey不要填错，尤其是`0`和大写字母`O`的区别。
+
+如果这两项填错，博客中评论区会是这样的(评论失败)：
+
+<!--![hugo-valie-01](/images/hugo-valine-01.png)-->
+![hugo-valine-01](../../../static/images/hugo-valine-01.png)
+
+如果输对了的话，评论区是这样的：
+
+<!--![hugo-valine-02](/images/hugo-valine-02.png)-->
+![hugo-valine-02](../../../static/images/hugo-valine-02.png)
+
+关于头像配置，参考：<https://valine.js.org/configuration.html>
+
+关于valine的js源cdn加速配置，我是用的even主题可以在`SITE/themes/even/layouts/partials/comments.html`中找到valine部分并修改。
 
 ## 13. Makefile编写
 
