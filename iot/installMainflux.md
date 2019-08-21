@@ -1287,7 +1287,7 @@ npm config set python /usr/bin/python2.7
 
     ```shell
     sudo apt update
-    ````
+    ```
 
 5. 安装 Docker-ce
 
