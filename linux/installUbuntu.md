@@ -738,3 +738,69 @@ git
 我的安装记录：
 
 安装deepine-wine-for-ubuntu
+
+## 18. 手机与电脑文件传输
+
+SendAnywhere 全平台通用。
+
+<https://send-anywhere.com/file-transfer>
+
+## 19. 配置vim-plug
+
+参考：
+
+<https://github.com/junegunn/vim-plug>
+<https://blog.csdn.net/rankun1/article/details/78775404>
+
+## 20. /bin/bash^M: bad interpreter: No such file or directory
+
+<https://blog.csdn.net/esther0401/article/details/7361496>
+
+## 21. 执行shell脚本的方法
+
+<http://c.biancheng.net/view/739.html>
+
+## 关于管理程序开机自启动的问题
+
+参考： <https://blog.csdn.net/qq_14989227/article/details/79227283>
+
+由于正在学习使用mainflux、edgex，本地安装的各个数据库开启自启动占用端口和docker容器造成冲突，挺麻烦的，而且这么多数据库也会造成系统开机变慢，运行变卡。所以需要关闭其开机自启动。
+
+在我的ubuntu上，软件开机自动文件在`/etc/rc0.d` ~ `/etc/rc6.d`以及`/etc/rcS.d`文件夹下。程序的开机自启动设置文件以`K`开头表示开机不启动，以`S`开头表示开机自启动。例如：想关闭vsftpd的开机自动启动，只需`sudo mv /etc/rc2.d/S20vsftpd /etc/rc2.d/K20vsftpd`就可以了。这条命令的用意就是利用mv的重命名功能。
+
+通过查看文件夹，可以发现我的电脑上`rc2.d`~`rc5.d`中是以`S`开头的文件，`rcS.d`中是系统程序，而其余文件夹中是以`K`开头的文件。
+
+还可以安装`rcconf`或`sysv-rc-conf`工具来方便的管理程序自启。
+
+但是从网上了解和实际操作发现，Ubuntu18是没有rcconf、sysv-rc-conf工具的。而是使用systemctl工具进行管理。
+
+找到一篇非常好的关于管理软件启动停止的文章：
+
+- <https://linoxide.com/linux-how-to/enable-disable-services-ubuntu-systemd-upstart/>
+
+最后关闭了一些软件的开机自启：
+
+```shell
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~$ sudo systemctl disable nginx
+Synchronizing state of nginx.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install disable nginx
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~$ sudo systemctl disable redis-server
+Synchronizing state of redis-server.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install disable redis-server
+Removed /etc/systemd/system/redis.service.
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~$ sudo systemctl disable postgres
+Failed to disable unit: Unit file postgres.service does not exist.
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~$ sudo systemctl disable postgresql
+Synchronizing state of postgresql.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install disable postgresql
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~$ sudo systemctl disable rabbitmq
+Failed to disable unit: Unit file rabbitmq.service does not exist.
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~$ sudo systemctl disable rabbitmq-server
+Synchronizing state of rabbitmq-server.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install disable rabbitmq-server
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~$ sudo systemctl disable mongodb
+Synchronizing state of mongodb.service with SysV service script with /lib/systemd/systemd-sysv-install.
+Executing: /lib/systemd/systemd-sysv-install disable mongodb
+eiger@eiger-ThinkPad-X1-Carbon-3rd:~$
+```
+
