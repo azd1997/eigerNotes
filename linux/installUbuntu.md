@@ -408,6 +408,12 @@ chrome安装后提供了两个快捷方式：/usr/bin/google-chrome、/usr/bin/g
 
 如果安装完打开chrome发生闪退，解决方法参见上面提到的博文
 
+### 11.1 离线安装插件
+
+没有梯子的话想要安装chrome插件需要下载.crx插件文件拖拽到chrome extensions界面完成安装，但是新版chrome已经禁用了该方法。解决办法是：将待安装的.crx修改后缀名为.zip，解压到文件夹，在chrome extensions界面开启开发者选项，选择load unpacked可以直接将该文件夹安装进去。
+
+推荐安装的chrome插件： octotree 用于github左边栏树形文件导航。
+
 ## 12. 安装Hugo
 
 以前在Windows笔记本上安装了hugo并部署了个人博客： <http://eiger.me>，现在开始用乌班图正式进行一些开发与学习，将笔记文档复制来复制去觉得太麻烦，于是考虑在乌班图上也装hugo并将原博客项目拉取至此（主要方法就是将原项目上传至Github并拉取到乌班图笔记本，这里就不详述）
