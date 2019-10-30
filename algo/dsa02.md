@@ -139,5 +139,374 @@ int main(int argc, char* argv[]){
 代码实现：
 
 ```go
+// staticArray.go
 
+/*
+不使用length标记数组长度，而通过切片自身长度和容量来实现的固定数组，太折腾了。
+重难点在于插入时需要注意一些细节。
+一般的数组模拟都是
+type StaticArray struct {
+    data []int
+    length int
+}
+这样实现起来方便许多
+*/
+
+package ex5_array
+
+import (
+	"errors"
+	"fmt"
+)
+
+// StaticArray 使用固定容量的切片来模拟固定长度的数组
+type StaticArray struct {
+	data []int
+}
+
+// NewStaticArray 根据容量生成固定容量的数组
+func NewStaticArray(cap uint) *StaticArray {
+	if cap == 0 {
+		return nil
+	}
+	return &StaticArray{make([]int, 0, cap)}
+}
+
+// Cap 数组容量
+func (a *StaticArray) Cap() int {
+	return cap(a.data)
+}
+
+// Len 数组已使用长度
+func (a *StaticArray) Len() int {
+	return len(a.data)
+}
+
+// Find 根据索引查找元素，支持负数索引
+func (a *StaticArray) Find(index int) (res int, err error) {
+	l := a.Len()
+	err = isIndexOut(index, l, OP_FIND)
+	if err != nil {
+		return 0, err
+	}
+	var realIndex int
+	realIndex = toRealIndex(index, l)
+
+	return a.data[realIndex], nil
+}
+
+// Insert 根据下标插入元素，保持原元素的相对位置。 有一种取巧的插入是把直接把插入位置上的元素搬到末尾，这里不用
+func (a *StaticArray) Insert(index int, elem int) (err error) {
+	// 检查数组是否已满
+	if a.isFull() {
+		return errors.New("array is full")
+	}
+
+	// 插入到数组所使用部分的末尾。append
+	l := a.Len()
+	if index == l || index == -1 {
+		a.data = append(a.data, elem)
+		return nil
+	}
+
+	// 一般位置插入(检查越界，转换索引，插入)
+	err = isIndexOut(index, l, OP_INSERT)
+	if err != nil {
+		return err
+	}
+	var realIndex int
+	realIndex = toRealIndex(index, l)
+
+	// 在真正的插入之前  记得要给数组追加一个元素，用来给插入占位置，不然插入会索引越界
+	// 并且每次报错时，应该重新将这个位置删除。（这个设计太操蛋了，还是加个length好）
+	a.data = append(a.data, 0)
+
+	// 原数据向后挪移
+	for i:=l-1; i>=realIndex; i-- {
+		a.data[i+1] = a.data[i]
+	}
+	a.data[realIndex] = elem
+
+	return nil
+}
+
+// Del 删数据，后续前移
+// 注意：在这样的没有length标记字段的设计里，没办法回收空间，删除只能通过重新分配内存实现
+func (a *StaticArray) Del(index int) error {
+	l := a.Len()
+	var err error
+	err = isIndexOut(index, l, OP_DELETE)
+	if err != nil {
+		return err
+	}
+	var realIndex int
+	realIndex = toRealIndex(index, l)
+
+	// 删除通过拷贝另一个切片实现
+	slice := make([]int, l-1, a.Cap())
+	for i:=0; i<realIndex; i++ {
+		slice[i] = a.data[i]
+	}
+	for i:=realIndex; i<l-1; i++ {
+		slice[i] = a.data[i+1]
+	}
+	a.data = slice
+	return nil
+}
+
+// Update 更新元素值
+func (a *StaticArray) Update(index int, new int) error {
+	l := a.Len()
+	var err error
+	err = isIndexOut(index, l, OP_DELETE)
+	if err != nil {
+		return err
+	}
+	var realIndex int
+	realIndex = toRealIndex(index, l)
+
+	a.data[realIndex] = new
+	return nil
+}
+
+// Print 打印
+func (a *StaticArray) Print() {
+	fmt.Println(a.data)
+}
+
+const (
+	OP_INSERT = iota
+	OP_DELETE
+	OP_UPDATE
+	OP_FIND
+)
+
+var opMap = map[uint8]string{
+	OP_INSERT : "op_insert",
+	OP_DELETE : "op_delete",
+	OP_UPDATE : "op_update",
+	OP_FIND : "op_find",
+}
+
+// isIndexOut 判断索引是否越界
+func isIndexOut(index int, listLength int, op uint8) (err error) {
+
+	switch op {
+	case OP_INSERT:
+		if index > listLength || index < -listLength-1 {
+			err = errors.New("index out of range")
+		}
+	case OP_DELETE, OP_UPDATE, OP_FIND:
+		if index >= listLength || index < -listLength {
+			err = errors.New("index out of range")
+		}
+	default:
+		err = errors.New("unknown operation")
+	}
+
+	if err != nil {
+		return fmt.Errorf("%s: %s", opMap[op], err)
+	}
+	return nil
+}
+
+// toRealIndex 处理int型索引下标，将其转换为自然数。调用之前需根据不同操作检查索引越界
+func toRealIndex(index int, listLength int) (realIndex int) {
+
+	// 0, 1, 2, 3 中间插入4 => 0, 1, 4, 2, 3
+	// 现长度4， 插入正索引2， 插入负索引-3
+	// 0, 1, 2, 3 中间插入4 => 0, 1, 4, 2, 3
+	// 现长度4， 插入正索引4， 插入负索引-1
+	if index < 0 {
+		realIndex = listLength + index + 1
+	} else {
+		realIndex = index
+	}
+	return realIndex
+}
+
+// isFull 判断数组是否已满
+func (a *StaticArray) isFull() bool {
+	return a.Len() == a.Cap()
+}
+```
+
+测试：
+
+```go
+// staticArray_test.go
+
+
+package ex5_array
+
+import (
+	"fmt"
+	"testing"
+)
+
+func TestStaticArray(t *testing.T) {
+	s := NewStaticArray(5) // len = 0, cap = 5}
+	fmt.Printf("len = %d, cap = %d\n", s.Len(), s.Cap())
+
+	var err error
+	//if err = s.Insert(2, 99); err == nil {
+	//	t.Error("本应出错")
+	//}
+
+	// 正常插入五个数
+	if err = s.Insert(0, 90); err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("len = %d, cap = %d\n", s.Len(), s.Cap())
+	s.Print()
+	if err = s.Insert(1, 91); err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("len = %d, cap = %d\n", s.Len(), s.Cap())
+	s.Print()
+	if err = s.Insert(2, 92); err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("len = %d, cap = %d\n", s.Len(), s.Cap())
+	s.Print()
+	if err = s.Insert(0, 93); err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("len = %d, cap = %d\n", s.Len(), s.Cap())
+	s.Print()
+	if err = s.Insert(3, 94); err != nil {
+		t.Error(err)
+	}
+	fmt.Printf("len = %d, cap = %d\n", s.Len(), s.Cap())
+	s.Print()
+
+	// 试试满了还插
+	if err = s.Insert(0, 90); err == nil {
+		t.Error("本应出错")
+	}
+	s.Print()
+
+	// 更改
+	if err = s.Update(0, 99); err != nil {
+		t.Error(err)
+	}
+	s.Print()
+
+	// 删除
+	if err = s.Del(3); err != nil {
+		t.Error(err)
+	}
+	s.Print()
+
+	return
+}
+```
+
+测试输出：
+
+```shell
+=== RUN   TestStaticArray
+len = 0, cap = 5
+len = 1, cap = 5
+[90]
+len = 2, cap = 5
+[90 91]
+len = 3, cap = 5
+[90 91 92]
+len = 4, cap = 5
+[93 90 91 92]
+len = 5, cap = 5
+[93 90 91 94 92]
+[93 90 91 94 92]
+[99 90 91 94 92]
+[99 90 91 92]
+--- PASS: TestStaticArray (0.00s)
+PASS
+
+Process finished with exit code 0
+```
+
+基本上没看出啥问题。
+
+下面再附上一个常规的数组模拟实现。
+
+```go
+type Array struct {
+	data   []int
+	length uint
+}
+
+//为数组初始化内存
+func NewArray(capacity uint) *Array {
+	if capacity == 0 {
+		return nil
+	}
+	return &Array{
+		data:   make([]int, capacity, capacity),
+		length: 0,
+	}
+}
+
+func (this *Array) Len() uint {
+	return this.length
+}
+
+//判断索引是否越界
+func (this *Array) isIndexOutOfRange(index uint) bool {
+	if index >= uint(cap(this.data)) {
+		return true
+	}
+	return false
+}
+
+//通过索引查找数组，索引范围[0,n-1]
+func (this *Array) Find(index uint) (int, error) {
+	if this.isIndexOutOfRange(index) {
+		return 0, errors.New("out of index range")
+	}
+	return this.data[index], nil
+}
+
+//插入数值到索引index上
+func (this *Array) Insert(index uint, v int) error {
+	if this.Len() == uint(cap(this.data)) {
+		return errors.New("full array")
+	}
+	if index != this.length && this.isIndexOutOfRange(index) {
+		return errors.New("out of index range")
+	}
+
+	for i := this.length; i > index; i-- {
+		this.data[i] = this.data[i-1]
+	}
+	this.data[index] = v
+	this.length++
+	return nil
+}
+
+func (this *Array) InsertToTail(v int) error {
+	return this.Insert(this.Len(), v)
+}
+
+//删除索引index上的值
+func (this *Array) Delete(index uint) (int, error) {
+	if this.isIndexOutOfRange(index) {
+		return 0, errors.New("out of index range")
+	}
+	v := this.data[index]
+	for i := index; i < this.Len()-1; i++ {
+		this.data[i] = this.data[i+1]
+	}
+	this.length--
+	return v, nil
+}
+
+//打印数列
+func (this *Array) Print() {
+	var format string
+	for i := uint(0); i < this.Len(); i++ {
+		format += fmt.Sprintf("|%+v", this.data[i])
+	}
+	fmt.Println(format)
+}
 ```
