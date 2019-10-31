@@ -144,6 +144,7 @@ int main(int argc, char* argv[]){
 /*
 不使用length标记数组长度，而通过切片自身长度和容量来实现的固定数组，太折腾了。
 重难点在于插入时需要注意一些细节。
+此外，实现了反向索引。
 一般的数组模拟都是
 type StaticArray struct {
     data []int
@@ -426,7 +427,7 @@ PASS
 Process finished with exit code 0
 ```
 
-基本上没看出啥问题。
+基本上没看出啥问题。（不过不保证有没有潜在的bug）
 
 下面再附上一个常规的数组模拟实现。
 

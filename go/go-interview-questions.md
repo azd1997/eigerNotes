@@ -387,3 +387,405 @@ D. var x error = nil
 // }
 
 ```
+
+### 15. init函数
+
+```go
+关于init函数，下面说法正确的是()
+
+A. 一个包中，可以包含多个 init 函数；
+B. 程序编译时，先执行依赖包的 init 函数，再执行 main 包内的 init 函数；
+C. main 包中，不能有 init 函数；
+D. init 函数可以被其他函数调用；
+```
+
+```go
+答案：
+A
+
+// 参考答案及解析：AB。关于 init() 函数有几个需要注意的地方：
+
+// init() 函数是用于程序执行前做包的初始化的函数，比如初始化包里的变量等;
+// 一个包可以出线多个 init() 函数,一个源文件也可以包含多个 init() 函数；
+// 同一个包中多个 init() 函数的执行顺序没有明确定义，但是不同包的init函数是根据包导入的依赖关系决定的（看下图）;
+// init() 函数在代码中不能被显示调用、不能被引用（赋值给函数变量），否则出现编译错误;
+// 一个包被引用多次，如 A import B,C import B,A import C，B 被引用多次，但 B 包只会初始化一次；
+// 引入包，不可出现死循坏。即 A import B,B import A，这种情况编译失败；
+```
+
+![go-interview-questions_15](/images/go-interview-questions_15.jpg)
+<!--![go-interview-questions_15](../../../static/images/go-interview-questions_15.png)-->
+
+### 16. 函数变量是指向函数的指针
+
+```go
+下面这段代码输出什么以及原因？
+
+func hello() []string {
+    return nil
+}
+
+func main() {
+    h := hello
+    if h == nil {
+        fmt.Println("nil")
+    } else {
+        fmt.Println("not nil")
+    }
+}
+
+A. nil
+B. not nil
+C. compilation error
+```
+
+```go
+答案：
+B。h是hello函数的一个指针
+
+// 答案及解析：B。这道题目里面，是将 hello() 赋值给变量 h，而不是函数的返回值，所以输出 not nil
+```
+
+### 17. 类型分支仅针对接口类型使用
+
+```go
+下面这段代码能否编译通过？如果可以，输出什么？
+
+func GetValue() int {
+    return 1
+}
+
+func main() {
+    i := GetValue()
+    switch i.(type) {
+    case int:
+        println("int")
+    case string:
+        println("string")
+    case interface{}:
+        println("interface")
+    default:
+        println("unknown")
+    }
+}
+```
+
+```go
+答案：
+不能，类型分支是给接口用的
+
+//参考答案及解析：编译失败。考点：类型选择，类型选择的语法形如：i.(type)，其中 i 是接口，type 是固定关键字，需要注意的是，只有接口类型才可以使用类型选择。看下关于接口的文章。
+```
+
+### 18. channel
+
+```go
+关于channel，下面语法正确的是()
+
+A. var ch chan int
+B. ch := make(chan int)
+C. <- ch
+D. ch <-
+```
+
+```go
+答案：
+ABC
+
+// 参考答案及解析：ABC。A、B都是声明 channel；C 读取 channel；写 channel 是必须带上值，所以 D 错误。
+```
+
+### 19. 空map也可以读
+
+```go
+下面这段代码输出什么？
+
+A.0
+B.1
+C.Compilation error
+
+type person struct {
+    name string
+}
+
+func main() {
+    var m map[person]int
+    p := person{"mike"}
+    fmt.Println(m[p])
+}
+```
+
+```go
+答案：
+C。声明了map但是没有初始化，这样使用 m[p]会造成 panic: 空指针调用
+
+
+// 参考答案及解析：A。打印一个 map 中不存在的值时，返回元素类型的零值。这个例子中，m 的类型是 map[person]int，因为 m 中不存在 p，所以打印 int 类型的零值，即 0。
+```
+
+### 20. 可变函数入参slice...可以改变该切片
+
+```go
+下面这段代码输出什么？
+
+A.18
+B.5
+C.Compilation error
+
+func hello(num ...int) {
+    num[0] = 18
+}
+
+func main() {
+    i := []int{5, 6, 7}
+    hello(i...)
+    fmt.Println(i[0])
+}
+```
+
+```go
+答案：
+B。 实参是值传递，所以 num 只是由 i 的元素的副本构建成的一个切片，修改 num[0] 不会对 i 造成任何影响
+
+// 参考答案及解析：18。知识点：可变函数。https://mp.weixin.qq.com/s/aOaNkCKudeI7fArogzpCsw
+// 可变函数最后一个入参如果是切片并使用了...，切片本身会作为参数直接传入，不会再创建一个新的切片。这样，在函数内对这个入参的操作会影响这个切片
+```
+
+### 21. 不同类型数值变量不能直接相加
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    a := 5
+    b := 8.1
+    fmt.Println(a + b)
+}
+A.13.1
+B.13
+C.compilation error
+```
+
+```go
+答案：
+C。 不能直接加，a 是int, b 是float64, 要显式转换类型.
+
+// 参考答案及解析：C。a 的类型是 int，b 的类型是 float，两个不同类型的数值不能相加，编译报错。
+
+```
+
+### 22. 基于切片构造切片a[i:j:k]
+
+```go
+下面这段代码输出什么？
+
+package main
+
+import (
+    "fmt"
+)
+
+func main() {
+    a := [5]int{1, 2, 3, 4, 5}
+    t := a[3:4:4]
+    fmt.Println(t[0])
+}
+A.3
+B.4
+C.compilation error
+```
+
+```go
+答案：
+C。  t := a[3:4:4]， 第二个选项是间隔。
+
+// 参考答案及解析：B。知识点：操作符 [i,j]。基于数组（切片）可以使用操作符 [i,j] 创建新的切片，从索引 i，到索引 j 结束，截取已有数组（切片）的任意部分，返回新的切片，新切片的值包含原数组（切片）的 i 索引的值，但是不包含 j 索引的值。i、j 都是可选的，i 如果省略，默认是 0，j 如果省略，默认是原数组（切片）的长度。i、j 都不能超过这个长度值。
+
+// 假如底层数组的大小为 k，截取之后获得的切片的长度和容量的计算方法：长度：j-i，容量：k-i。
+
+// 截取操作符还可以有第三个参数，形如 [i,j,k]，第三个参数 k 用来限制新切片的容量，但不能超过原数组（切片）的底层数组大小。截取获得的切片的长度和容量分别是：j-i、k-i。
+
+// 所以例子中，切片 t 为 [4]，长度和容量都是 1。
+
+// 详细的知识点可以看下关于切片的文章。
+```
+
+### 23. 不同长度数组类型不同
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    a := [2]int{5, 6}
+    b := [3]int{5, 6}
+    if a == b {
+        fmt.Println("equal")
+    } else {
+        fmt.Println("not equal")
+    }
+}
+A. compilation error
+B. equal
+C. not equal
+```
+
+```go
+答案：
+A。 类型不同不可比较，使用 a == b 触发panic
+
+// 参考答案及解析：A。Go 中的数组是值类型，可比较，另外一方面，数组的长度也是数组类型的组成部分，所以 a 和 b 是不同的类型，是不能比较的，所以编译错误。
+```
+
+### 24. map没有cap操作
+
+```go
+关于 cap() 函数的适用类型，下面说法正确的是()
+
+A. array
+B. slice
+C. map
+D. channel
+```
+
+```go
+答案：
+ABCD
+
+//参考答案及解析：ABD。知识点：cap()，cap() 函数不适用 map。
+```
+
+### 25. 空接口动态类型与值都为nil
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    var i interface{}
+    if i == nil {
+        fmt.Println("nil")
+        return
+    }
+    fmt.Println("not nil")
+}
+
+A. nil
+B. not nil
+C. compilation error
+```
+
+```go
+答案：
+B。空接口不是nil， 但可以和 nil 作 == 比较
+
+//参考答案及解析：A。当且仅当接口的动态值和动态类型都为 nil 时，接口类型值才为 nil。
+```
+
+### 26. map删除不存在键不报错
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    s := make(map[string]int)
+    delete(s, "h")
+    fmt.Println(s["h"])
+}
+
+A. runtime panic
+B. 0
+C. compilation error
+```
+
+```go
+答案：
+C。此时还是空map,删除一个不存在的键会panic。
+
+//参考答案及解析：B。删除 map 不存在的键值对时，不会报错，相当于没有任何作用；获取不存在的减值对时，返回值类型对应的零值，所以返回 0。
+```
+
+### 27. 25个关键字
+
+```go
+1.下面属于关键字的是（）
+
+A.func
+B.struct
+C.class
+D.defer
+```
+
+```go
+答案：
+C
+
+看反题了。。。
+// 参考答案及解析：ABD。知识点：Go 语言的关键字。Go 语言有 25 个关键字，看下图：
+```
+
+![go-interview-questions_27](/images/go-interview-questions_27.jpg)
+<!--![go-interview-questions_27](../../../static/images/go-interview-questions_27.png)-->
+
+### 28. Printf之verb
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    i := -5
+    j := +5
+    fmt.Printf("%+d %+d", i, j)
+}
+
+A. -5 +5
+B. +5 +5
+C. 0  0
+```
+
+```go
+答案：
+%+d 是什么动词？ 猜B
+
+// 参考答案及解析：A。%d表示输出十进制数字，+表示输出数值的符号。这里不表示取反。
+```
+
+### 29. 结构体嵌套之同名方法屏蔽
+
+```go
+下面这段代码输出什么？
+
+type People struct{}
+
+func (p *People) ShowA() {
+    fmt.Println("showA")
+    p.ShowB()
+}
+func (p *People) ShowB() {
+    fmt.Println("showB")
+}
+
+type Teacher struct {
+    People
+}
+
+func (t *Teacher) ShowB() {
+    fmt.Println("teacher showB")
+}
+
+func main() {
+    t := Teacher{}
+    t.ShowB()
+}
+```
+
+```go
+答案：
+"teacher showB"
+
+// 参考答案及解析：teacher showB。知识点：结构体嵌套。
+// 在嵌套结构体中，People 称为内部类型，Teacher 称为外部类型；
+// 通过嵌套，内部类型的属性、方法，可以为外部类型所有，就好像是外部类型自己的一样。
+// 此外，外部类型还可以定义自己的属性和方法，甚至可以定义与内部相同的方法，这样内部类型的方法就会被“屏蔽”。// 这个例子中的 ShowB() 就是同名方法。
+```
+
+
+// 看到第13天。
