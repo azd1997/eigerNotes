@@ -787,5 +787,781 @@ func main() {
 // 此外，外部类型还可以定义自己的属性和方法，甚至可以定义与内部相同的方法，这样内部类型的方法就会被“屏蔽”。// 这个例子中的 ShowB() 就是同名方法。
 ```
 
+### 30. 全局字符变量定义
 
-// 看到第13天。
+```go
+定义一个包内全局字符串变量，下面语法正确的是（）
+
+A. var str string
+B. str := ""
+C. str = ""
+D. var str = ""
+```
+
+```go
+答案：
+AD
+
+//参考答案及解析：AD。B 只支持局部变量声明；C 是赋值，str 必须在这之前已经声明
+```
+
+### 31. defer函数注册时入参值传递
+
+```go
+下面这段代码输出什么?
+
+func hello(i int) {
+    fmt.Println(i)
+}
+func main() {
+    i := 5
+    defer hello(i)
+    i = i + 10
+}
+```
+
+```go
+答案：
+5
+//参考答案及解析：5。这个例子中，hello() 函数的参数在执行 defer 语句的时候会保存一份副本，在实际调用 hello() 函数时用，所以是 5
+```
+
+### 32. 结构体嵌套之内部方法
+
+```go
+下面这段代码输出什么？
+
+type People struct{}
+
+func (p *People) ShowA() {
+    fmt.Println("showA")
+    p.ShowB()
+}
+func (p *People) ShowB() {
+    fmt.Println("showB")
+}
+
+type Teacher struct {
+    People
+}
+
+func (t *Teacher) ShowB() {
+    fmt.Println("teacher showB")
+}
+
+func main() {
+    t := Teacher{}
+    t.ShowA()
+}
+```
+
+```go
+答案：
+showA
+showB
+
+//知识点：结构体嵌套。这道题可以结合第 12 天的第三题一起看，Teacher 没有自己 ShowA()，所以调用内部类型 People 的同名方法，需要注意的是第 5 行代码调用的是 People 自己的 ShowB 方法
+```
+
+### 33. 字符串不可修改
+
+```go
+func main() {
+    str := "hello"
+    str[0] = 'x'
+    fmt.Println(str)
+}
+
+A. hello
+B. xello
+C. compilation error
+```
+
+```go
+答案：
+C。字符串变量一经定义不可修改
+
+//参考代码及解析：C。知识点：常量，Go 语言中的字符串是只读的
+```
+
+### 34. 指针操作
+
+```go
+下面代码输出什么？
+
+func incr(p *int) int {
+    *p++
+    return *p
+}
+
+func main() {
+    p :=1
+    incr(&p)
+    fmt.Println(p)
+}
+
+A. 1
+B. 2
+C. 3
+```
+
+```go
+答案：
+B。incr()函数已将该值修改
+
+//参考答案及解析：B。知识点：指针，incr() 函数里的 p 是 *int 类型的指针，指向的是 main() 函数的变量 p 的地址。第 2 行代码是将该地址的值执行一个自增操作，incr() 返回自增后的结果。
+```
+
+### 35. 可变函数
+
+```go
+对 add() 函数调用正确的是（）
+
+func add(args ...int) int {
+
+    sum := 0
+    for _, arg := range args {
+        sum += arg
+    }
+    return sum
+}
+
+A. add(1, 2)
+B. add(1, 3, 7)
+C. add([]int{1, 2})
+D. add([]int{1, 3, 7}…)
+```
+
+```go
+答案：
+ABD
+
+//参考答案及解析：ABD。知识点：可变函数
+```
+
+### 36. 切片的nil值
+
+```go
+下面代码下划线处可以填入哪个选项使得程序走yes分支？
+
+func main() {
+    var s1 []int
+    var s2 = []int{}
+    if __ == nil {
+        fmt.Println("yes nil")
+    }else{
+        fmt.Println("no nil")
+    }
+}
+
+A. s1
+B. s2
+C. s1、s2 都可以
+```
+
+```go
+答案：
+A
+
+//参考答案及解析：A。
+//知识点：nil 切片和空切片。nil 切片和 nil 相等，一般用来表示一个不存在的切片；
+//空切片和 nil 不相等，表示一个空的集合。
+```
+
+### 37. 整数直接转换为字符串
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    i := 65
+    fmt.Println(string(i))
+}
+
+A. A
+B. 65
+C. compilation error
+```
+
+```go
+答案：
+A。直接转换成string，是将整数的bit表示转换为byte表示，再得到相应的单字符字符串。
+想要得到字符串“65”，使用 strconv.ItoA(int)
+
+//参考答案及解析：A。UTF-8 编码中，十进制数字 65 对应的符号是 A
+```
+
+### 38. 接口变量方法调用
+
+```go
+下面这段代码输出什么？
+
+type A interface {
+    ShowA() int
+}
+
+type B interface {
+    ShowB() int
+}
+
+type Work struct {
+    i int
+}
+
+func (w Work) ShowA() int {
+    return w.i + 10
+}
+
+func (w Work) ShowB() int {
+    return w.i + 20
+}
+
+func main() {
+    c := Work{3}
+    var a A = c
+    var b B = c
+    fmt.Println(a.ShowA())
+    fmt.Println(b.ShowB())
+}
+```
+
+```go
+答案：
+13
+23
+
+//参考答案及解析：13 23。
+//知识点：接口。一种类型实现多个接口，结构体 Work 分别实现了接口 A、B，所以接口变量 a、b 调用各自的方法 ShowA() 和 ShowB()，输出 13、23。
+```
+
+### 39. 切片容量
+
+```go
+切片 a、b、c 的长度和容量分别是多少？
+
+func main() {
+
+    s := [3]int{1, 2, 3}
+    a := s[:0]
+    b := s[:2]
+    c := s[1:2:cap(s)]
+}
+```
+
+```go
+答案：
+0，0
+2，2
+1，3
+
+//参考答案及解析：a、b、c 的长度和容量分别是 0 3、2 3、1 2。
+//知识点：数组或切片的截取操作。
+//截取操作有带 2 个或者 3 个参数，形如：[i:j] 和 [i:j:k]，
+//假设截取对象的底层数组长度为 l。
+//在操作符 [i:j] 中，如果 i 省略，默认 0，如果 j 省略，默认底层数组的长度，
+//截取得到的切片长度和容量计算方法是 j-i、l-i。
+//操作符 [i:j:k]，k 主要是用来限制切片的容量，但是不能大于数组的长度 l，
+//截取得到的切片长度和容量计算方法是 j-i、k-i。
+```
+
+### 40. map初始化与安全读
+
+```go
+下面代码中 A B 两处应该怎么修改才能顺利编译？
+
+func main() {
+    var m map[string]int        //A
+    m["a"] = 1
+    if v := m["b"]; v != nil {  //B
+        fmt.Println(v)
+    }
+}
+```
+
+```go
+答案：
+A.  m := make(map[string]int)
+B.  if v, ok := m["b"]; ok {
+
+//在 A 处只声明了map m ,并没有分配内存空间，不能直接赋值，需要使用 make()，都提倡使用 make() 或者字面量的方式直接初始化 map。
+//B 处，v,k := m["b"] 当 key 为 b 的元素不存在的时候，v 会返回值类型对应的零值，k 返回 false。
+```
+
+### 41. 接口的静态类型
+
+```go
+下面代码输出什么？
+
+type A interface {
+    ShowA() int
+}
+
+type B interface {
+    ShowB() int
+}
+
+type Work struct {
+    i int
+}
+
+func (w Work) ShowA() int {
+    return w.i + 10
+}
+
+func (w Work) ShowB() int {
+    return w.i + 20
+}
+
+func main() {
+    c := Work{3}
+    var a A = c
+    var b B = c
+    fmt.Println(a.ShowB())
+    fmt.Println(b.ShowA())
+}
+
+A. 23 13
+B. compilation error
+```
+
+```go
+答案：
+B
+
+//参考答案及解析：B。知识点：接口的静态类型。/
+//a、b 具有相同的动态类型和动态值，分别是结构体 work 和 {3}；
+//a 的静态类型是 A，b 的静态类型是 B，
+//接口 A 不包括方法 ShowB()，接口 B 也不包括方法 ShowA()，
+//编译报错。看下编译错误：
+
+//a.ShowB undefined (type A has no field or method ShowB)
+//b.ShowA undefined (type B has no field or method ShowA)
+```
+
+### 42. 变量声明
+
+```go
+下面代码中，x 已声明，y 没有声明，判断每条语句的对错。
+
+1. x, _ := f()
+2. x, _ = f()
+3. x, y := f()
+4. x, y = f()
+```
+
+```go
+答案：
+14错，其余对
+
+//参考答案及解析：错、对、对、错。知识点：变量的声明。1.错，x 已经声明，不能使用 :=；2.对；3.对，当多值赋值时，:= 左边的变量无论声明与否都可以；4.错，y 没有声明。
+```
+
+### 43*. defer与函数返回值
+
+```go
+下面代码输出什么？
+
+func increaseA() int {
+    var i int
+    defer func() {
+        i++
+    }()
+    return i
+}
+
+func increaseB() (r int) {
+    defer func() {
+        r++
+    }()
+    return r
+}
+
+func main() {
+    fmt.Println(increaseA())
+    fmt.Println(increaseB())
+}
+
+A. 1 1
+B. 0 1
+C. 1 0
+D. 0 0
+```
+
+```go
+答案：
+A
+
+//参考答案及解析：B。知识点：defer、返回值。
+//注意一下，increaseA() 的返回参数是匿名，increaseB() 是具名。
+
+该题与题45、46一起看。
+
+相关文章: https://mp.weixin.qq.com/s/Hm8MdrqYgCQPQ4A1nrv4sw
+
+defer 是 Go 语言提供的一种用于注册延迟调用的机制，
+每一次 defer 都会把函数压入栈中，当前函数返回前再把延迟函数取出并执行。
+
+defer 语句并不会马上执行，而是会进入一个栈，
+函数 return 前，会按先进后出（FILO）的顺序执行。
+也就是说最先被定义的 defer 语句最后执行。
+先进后出的原因是后面定义的函数可能会依赖前面的资源，自然要先执行；
+否则，如果前面先执行，那后面函数的依赖就没有了。
+
+使用 defer 最容易采坑的地方是和带命名返回参数的函数一起使用时。
+defer 语句定义时，对外部变量的引用是有两种方式的，分别是作为函数参数和作为闭包引用。
+作为函数参数，则在 defer 定义时就把值传递给 defer，并被缓存起来；
+作为闭包引用的话，则会在 defer 函数真正调用时根据整个上下文确定当前的值。
+
+避免掉坑的关键是要理解这条语句：
+
+return xxx
+这条语句并不是一个原子指令，经过编译之后，变成了三条指令：
+
+1. 返回值 = xxx
+2. 调用 defer 函数
+3. 空的 return
+
+1,3 步才是 return 语句真正的命令，第 2 步是 defer 定义的语句，这里就有可能会操作返回值。
+
+所以，第二小题的实际执行代码可描述为：
+func increaseB() (r int) {
+    // 1.赋值
+    r = 0
+    // 2.闭包引用，r++
+    defer func() {
+        r++
+    }()
+    // 3.空 return
+    return
+}
+
+第一小题中函数 increaseA() 是匿名返回值，返回局部变量，同时 defer 函数也会操作这个局部变量。
+对于匿名返回值来说，可以假定有一个变量存储返回值，
+比如假定返回值变量为 anony，上面的返回语句可以拆分成以下过程：
+annoy = i
+i++
+return
+由于 i 是整型，会将值拷贝给 anony，所以 defer 语句中修改 i 值，对函数返回值不造成影响，所以返回 0 。
+```
+
+### 44. 类型断言
+
+```go
+下面代码输出什么？
+
+type A interface {
+    ShowA() int
+}
+
+type B interface {
+    ShowB() int
+}
+
+type Work struct {
+    i int
+}
+
+func (w Work) ShowA() int {
+    return w.i + 10
+}
+
+func (w Work) ShowB() int {
+    return w.i + 20
+}
+
+func main() {
+    var a A = Work{3}
+    s := a.(Work)
+    fmt.Println(s.ShowA())
+    fmt.Println(s.ShowB())
+}
+
+A. 13 23
+B. compilation error
+```
+
+```go
+答案：
+A
+//参考答案及解析：A。知识点：类型断言。
+```
+
+### 45*. defer与返回值
+
+```go
+f1()、f2()、f3() 函数分别返回什么？
+
+func f1() (r int) {
+    defer func() {
+        r++
+    }()
+    return 0
+}
+
+func f2() (r int) {
+    t := 5
+    defer func() {
+        t = t + 5
+    }()
+    return t
+}
+
+func f3() (r int) {
+    defer func(r int) {
+        r = r + 5
+    }(r)
+    return 1
+}
+```
+
+```go
+答案：
+0， 5， 6
+
+// 正确答案: 1， 5， 1
+
+反思:
+将三个函数的实际执行重写如下:
+
+1.
+func f1() (r int) {     // 具名变量返回
+    r = 0
+    defer func() {
+        r++     // 闭包引用外部变量r，r值修改为1
+    }()
+    return      // 空return，仅表示退出函数
+}
+
+2.
+func f2() (r int) {    // 具名变量返回
+    t := 5
+    r = t
+    defer func() {
+        t = t + 5   // t的变化和r无关了
+    }()
+    return
+}
+
+3.
+func f3() (r int) {   // 具名变量返回
+    r = 1
+    defer func(r int) {
+        r = r + 5       // r作为defer函数参数传入，仅拷贝值，外部r不受defer影响
+    }(r)
+    return
+}
+```
+
+### 46*. defer与返回值
+
+```go
+下面代码段输出什么？
+
+type Person struct {
+    age int
+}
+
+func main() {
+    person := &Person{28}
+
+    // 1.
+    defer fmt.Println(person.age)
+
+    // 2.
+    defer func(p *Person) {
+        fmt.Println(p.age)
+    }(person)
+
+    // 3.
+    defer func() {
+        fmt.Println(person.age)
+    }()
+
+    person.age = 29
+}
+```
+
+```go
+答案：
+3. 29
+2. 29
+1. 28
+
+// 答案是 29  29  28
+// 首先定义的局部变量person类型是一个指针
+// 其次defer是先进后出结构，故defer执行顺序为3  2  1
+// 3是匿名函数使用外部对象，而对象是指针，又在defer中，执行优先级为最低，故最外层代码修改以后，defer则会使用修改后的对象，故29
+// 2是函数传递参数进去，因为是指针，同3
+// 1看是一条语句，其实可以写成defer func(age int){fmt.Println(age)}(person.age) 因为传递的是执行到此初始person对象的age值，是而在此时age为28因为是值类型传递，所以输出为28
+
+// 参考答案及解析：29 29 28。变量 person 是一个指针变量 。
+// 1.person.age 此时是将 28 当做 defer 函数的参数，会把 28 缓存在栈中，等到最后执行该 defer 语句的时候取出，即输出 28；
+// 2.defer 缓存的是结构体 Person{28} 的地址，最终 Person{28} 的 age 被重新赋值为 29，所以 defer 语句最后执行的时候，依靠缓存的地址取出的 age 便是 29，即输出 29；
+// 3.闭包引用，输出 29；
+// 又由于 defer 的执行顺序为先进后出，即 3 2 1，所以输出 29 29 28。
+
+反思：
+defer确实会注册当前状态，但一定要注意defer内使用的是指针还是值传递，若是指针传递，则会随程序进行而修改，若是值传递，则值保持当时不变。
+
+本题与题48对比
+```
+
+### 47. defer
+
+```go
+下面这段代码正确的输出是什么？
+
+func f() {
+    defer fmt.Println("D")
+    fmt.Println("F")
+}
+
+func main() {
+    f()
+    fmt.Println("M")
+}
+
+A. F M D
+B. D F M
+C. F D M
+```
+
+```go
+答案：
+C
+
+//参考答案及解析：C。被调用函数里的 defer 语句在返回之前就会被执行，所以输出顺序是 F D M。
+```
+
+### 48*. defer与返回值
+
+```go
+下面代码输出什么？
+
+type Person struct {
+    age int
+}
+
+func main() {
+    person := &Person{28}
+
+    // 1.
+    defer fmt.Println(person.age)
+
+    // 2.
+    defer func(p *Person) {
+        fmt.Println(p.age)
+    }(person)
+
+    // 3.
+    defer func() {
+        fmt.Println(person.age)
+    }()
+
+    person = &Person{29}
+}
+```
+
+```go
+答案：
+注意和题46的区别在于最后person的指针变了
+3. 28
+2. 28
+1. 28
+
+// 参考答案及解析：29 28 28。这道题在第 19 天题目的基础上做了一点点小改动，前一题最后一行代码 person.age = 29 是修改引用对象的成员 age，这题最后一行代码 person = &Person{29} 是修改引用对象本身，来看看有什么区别。
+
+// 1处.person.age 这一行代码跟之前含义是一样的，此时是将 28 当做 defer 函数的参数，会把 28 缓存在栈中，等到最后执行该 defer 语句的时候取出，即输出 28；
+
+// 2处.defer 缓存的是结构体 Person{28} 的地址，这个地址指向的结构体没有被改变，最后 defer 语句后面的函数执行的时候取出仍是 28；
+
+// 3处.闭包引用，person 的值已经被改变，指向结构体 Person{29}，所以输出 29.
+
+// 由于 defer 的执行顺序为先进后出，即 3 2 1，所以输出 29 28 28。
+```
+
+### 49.
+
+```go
+下面的两个切片声明中有什么区别？哪个更可取？
+
+A. var a []int
+B. a := []int{}
+```
+
+```go
+答案：
+A是变量声明，B是声明并初始化为[]int{}。
+从值来讲，A中 a=nil; B中 a=[]int{}。
+建议使用B，很多时候可以避免自己忘了赋值而产生空指针调用，使用起来更安全。
+但是如果是想用 if a == nil {} 这样的方式来判断切片是否初始化，也是可以的。
+
+//A 声明的是 nil 切片；B 声明的是长度和容量都为 0 的空切片。
+//第一种切片声明不会分配内存，优先选择。
+```
+
+### 50.
+
+```go
+A、B、C、D 哪些选项有语法错误？
+
+type S struct {
+}
+
+func f(x interface{}) {
+}
+
+func g(x *interface{}) {
+}
+
+func main() {
+    s := S{}
+    p := &s
+    f(s) //A
+    g(s) //B
+    f(p) //C
+    g(p) //D
+}
+```
+
+```go
+答案：
+B。s为结构体变量，不能当做空接口指针传入 g()
+
+//参考答案及解析：BD。
+//函数参数为 interface{} 时可以接收任何类型的参数，包括用户自定义类型等，即使是接收指针类型也用 interface{}，而不是使用 *interface{}。
+//永远不要使用一个指针指向一个接口类型，因为它已经是一个指针。
+```
+
+### 51
+
+```go
+下面 A、B 两处应该填入什么代码，才能确保顺利打印出结果？
+
+type S struct {
+    m string
+}
+
+func f() *S {
+    return __  //A
+}
+
+func main() {
+    p := __    //B
+    fmt.Println(p.m) //print "foo"
+}
+```
+
+```go
+答案：
+A. &S{"foo"}
+B. f()
+
+//参考答案及解析：
+//A. &S{"foo"}
+//B. *f() 或者 f()
+//f() 函数返回参数是指针类型，所以可以用 & 取结构体的指针；
+//B 处，如果填 *f()，则 p 是 S 类型；如果填 f()，则 p 是 *S 类型，不过都可以使用 p.m 取得结构体的成员。
+```
+
+// 第22天
