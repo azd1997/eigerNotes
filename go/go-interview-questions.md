@@ -1480,7 +1480,7 @@ func main() {
 // 由于 defer 的执行顺序为先进后出，即 3 2 1，所以输出 29 28 28。
 ```
 
-### 49.
+### 49. 切片声明
 
 ```go
 下面的两个切片声明中有什么区别？哪个更可取？
@@ -1500,7 +1500,7 @@ A是变量声明，B是声明并初始化为[]int{}。
 //第一种切片声明不会分配内存，优先选择。
 ```
 
-### 50.
+### 50. 函数传参
 
 ```go
 A、B、C、D 哪些选项有语法错误？
@@ -1533,7 +1533,7 @@ B。s为结构体变量，不能当做空接口指针传入 g()
 //永远不要使用一个指针指向一个接口类型，因为它已经是一个指针。
 ```
 
-### 51
+### 51. 函数返回值
 
 ```go
 下面 A、B 两处应该填入什么代码，才能确保顺利打印出结果？
@@ -1564,4 +1564,784 @@ B. f()
 //B 处，如果填 *f()，则 p 是 S 类型；如果填 f()，则 p 是 *S 类型，不过都可以使用 p.m 取得结构体的成员。
 ```
 
-// 第22天
+### 52. 字符串零值
+
+```go
+下面的代码有几处语法问题，各是什么？
+
+package main
+import (
+    "fmt"
+)
+func main() {
+    var x string = nil
+    if x == nil {
+        x = "default"
+    }
+    fmt.Println(x)
+}
+```
+
+```go
+答案：
+var x string = nil; if x == nil. string的零值不是nil，不符合语法。本质来说，string是个包含有底层字节数组的结构体，不是指针类型，不能赋值为nil，也不能和nil比较
+
+// 参考答案及解析：两个地方有语法问题。golang 的字符串类型是不能赋值 nil 的，也不能跟 nil 比较。
+// 只有引用类型（map/channel/interface）可以和nil比较， 指针也可以
+// 当然赋值的话，nil可以赋给切片
+```
+
+### 53. defer注册
+
+```go
+return 之后的 defer 语句会执行吗，下面这段代码输出什么？
+
+var a bool = true
+func main() {
+    defer func(){
+        fmt.Println("1")
+    }()
+    if a == true {
+        fmt.Println("2")
+        return
+    }
+    defer func(){
+        fmt.Println("3")
+    }()
+}
+```
+
+```go
+答案：
+不会。后面那个defer都还没注册（压入栈）
+输出为:
+2
+1
+
+// 参考答案及解析：2 1。defer 关键字后面的函数或者方法想要执行必须先注册，return 之后的 defer 是不能注册的， 也就不能执行后面的函数或方法。
+```
+
+### 54. 自切片生成切片
+
+```go
+下面这段代码输出什么？为什么？
+
+func main() {
+
+    s1 := []int{1, 2, 3}
+    s2 := s1[1:]
+    s2[1] = 4
+    fmt.Println(s1)
+    s2 = append(s2, 5, 6, 7)
+    fmt.Println(s1)
+}
+```
+
+```go
+答案：
+[1,2,4]
+[1,2,4]
+s2和s1重叠的部分是共用底层内存的。程序结束时s2 = [2,4,5,6,7]
+
+// 参考答案及解析：
+
+// [1 2 4]
+// [1 2 4]
+// 我们知道，golang 中切片底层的数据结构是数组。当使用 s1[1:] 获得切片 s2，和 s1 共享同一个底层数组，这会导致 s2[1] = 4 语句影响 s1。
+// 要清楚的是 s1 len=3,cap=3
+// s2 = s1[1:]  len=3-1=2, cap = 3-1=2
+// s2 append之后由于cap不足，新分配了一块内存，就不和s1共用底层内存了
+
+// 而 append 操作会导致底层数组扩容，生成新的数组，因此追加数据后的 s2 不会影响 s1。
+
+// 但是为什么对 s2 赋值后影响的却是 s1 的第三个元素呢？这是因为切片 s2 是从数组的第二个元素开始，s2 索引为 1 的元素对应的是 s1 索引为 2 的元素。
+```
+
+### 55. if -else条件语句
+
+```go
+下面选项正确的是？
+
+func main() {
+    if a := 1; false {
+    } else if b := 2; false {
+    } else {
+        println(a, b)
+    }
+}
+A. 1 2
+B. compilation error
+
+```
+
+```go
+答案：
+A。 if ... else if ... else内局部变量共用
+
+// 参考答案及解析：A。知识点：代码块和变量作用域。
+```
+
+### 56. map字面量与遍历
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    m := map[int]string{0:"zero",1:"one"}
+    for k,v := range m {
+        fmt.Println(k,v)
+    }
+}
+```
+
+```go
+答案：
+0 zero
+1 one
+或者顺序反过来（因为无序遍历）
+
+//参考答案及解析：
+
+// 0 zero
+// 1 one
+// // 或者
+// 1 one
+// 0 zero
+// map 的输出是无序的。
+```
+
+### 57. defer注册
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    a := 1
+    b := 2
+    defer calc("1", a, calc("10", a, b))
+    a = 0
+    defer calc("2", a, calc("20", a, b))
+    b = 1
+}
+
+func calc(index string, a, b int) int {
+    ret := a + b
+    fmt.Println(index, a, b, ret)
+    return ret
+}
+```
+
+```go
+答案：
+a,b都是值类型，这题没有涉及指针传参，所以函数都是值拷贝传入。需要注意的是defer有个入参是calc("10", a, b)和calc("20", a, b)要提前计算好。
+所以defer1注册时为 calc("1", 1, 3), defer2注册时为 calc("2", 0, 2)
+所以输出为：
+10 1 2 3
+20 0 2 2
+2 0 2 2
+1 1 3 4
+
+//参考答案及解析：
+
+// 10 1 2 3
+// 20 0 2 2
+// 2 0 2 2
+// 1 1 3 4
+// 程序执行到 main() 函数三行代码的时候，会先执行 calc() 函数的 b 参数，即：calc("10",a,b)，输出：10 1 2 3，得到值 3，因为
+// defer 定义的函数是延迟函数，故 calc("1",1,3) 会被延迟执行；
+
+// 程序执行到第五行的时候，同样先执行 calc("20",a,b) 输出：20 0 2 2 得到值 2，同样将 calc("2",0,2) 延迟执行；
+
+// 程序执行到末尾的时候，按照栈先进后出的方式依次执行：calc("2",0,2)，calc("1",1,3)，则就依次输出：2 0 2 2，1 1 3 4。
+```
+
+### 58. 内置类型不能增加方法
+
+```go
+下面这段代码输出什么？为什么？
+
+func (i int) PrintInt ()  {
+    fmt.Println(i)
+}
+
+func main() {
+    var i int = 1
+    i.PrintInt()
+}
+A. 1
+B. compilation error
+```
+
+```go
+答案：
+B。 不能对内置类型添加方法，如需添加方法，需要先对内置类型声明别名
+
+//参考答案及解析：B。基于类型创建的方法必须定义在同一个包内，上面的代码基于 int 类型创建了 PrintInt() 方法，由于 int 类型和方法 PrintInt() 定义在不同的包内，所以编译出错。
+//
+//解决的办法可以定义一种新的类型：
+//
+// type Myint int
+//
+// func (i Myint) PrintInt ()  {
+//     fmt.Println(i)
+// }
+//
+// func main() {
+//     var i Myint = 1
+//     i.PrintInt()
+// }
+```
+
+### 59. 值不能调用指针方法
+
+```go
+下面这段代码输出什么？为什么？
+
+type People interface {
+    Speak(string) string
+}
+
+type Student struct{}
+
+func (stu *Student) Speak(think string) (talk string) {
+    if think == "speak" {
+        talk = "speak"
+    } else {
+        talk = "hi"
+    }
+    return
+}
+
+func main() {
+    var peo People = Student{}
+    think := "speak"
+    fmt.Println(peo.Speak(think))
+}
+A. speak
+B. compilation error
+```
+
+```go
+答案：
+B。实现方法的是指针，却使用结构体（值）去调用方法。（指针能调值方法，能调指针方法； 值能调值方法，但不能调指针方法）
+
+//参考答案及解析：B。编译错误 Student does not implement People (Speak method has pointer receiver)，值类型 Student 没有实现接口的 Speak() 方法，而是指针类型 *Student 实现该方法。
+```
+
+### 60. iota的用法
+
+```go
+下面这段代码输出什么？
+
+const (
+    a = iota
+    b = iota
+)
+const (
+    name = "name"
+    c    = iota
+    d    = iota
+)
+func main() {
+    fmt.Println(a)
+    fmt.Println(b)
+    fmt.Println(c)
+    fmt.Println(d)
+}
+```
+
+```go
+答案：
+0
+1
+0
+1
+
+//参考答案及解析：0 1 1 2。知识点：iota 的用法。
+
+// iota 是 golang 语言的常量计数器，只能在常量的表达式中使用。
+
+// iota 在 const 关键字出现时将被重置为0，const中每新增一行常量声明将使 iota 计数一次。
+
+// 推荐阅读：
+// https://studygolang.com/articles/2192
+
+反思：
+一个const组只要出现过1次iota，其值就是从第一行开始递增的！
+```
+
+### 61. 接口nil值
+
+```go
+下面这段代码输出什么？为什么？
+
+type People interface {
+    Show()
+}
+
+type Student struct{}
+
+func (stu *Student) Show() {
+
+}
+
+func main() {
+
+    var s *Student
+    if s == nil {
+        fmt.Println("s is nil")
+    } else {
+        fmt.Println("s is not nil")
+    }
+    var p People = s
+    if p == nil {
+        fmt.Println("p is nil")
+    } else {
+        fmt.Println("p is not nil")
+    }
+}
+
+```
+
+```go
+答案：
+s is nil
+p is not nil
+指针类型声明时为nil; 接口值只有当其动态类型和动态类型值均为nil时才为nil
+
+//参考答案及解析：s is nil 和 p is not nil。这道题会不会有点诧异，我们分配给变量 p 的值明明是 nil，然而 p 却不是 nil。记住一点，当且仅当动态值和动态类型都为 nil 时，接口类型值才为 nil。上面的代码，给变量 p 赋值之后，p 的动态值是 nil，但是动态类型却是 *Student，是一个 nil 指针，所以相等条件不成立。
+```
+
+### 62. stringer接口
+
+```go
+下面这段代码输出什么？
+
+type Direction int
+
+const (
+    North Direction = iota
+    East
+    South
+    West
+)
+
+func (d Direction) String() string {
+    return [...]string{"North", "East", "South", "West"}[d]
+}
+
+func main() {
+    fmt.Println(South)
+}
+
+```
+
+```go
+答案：
+South
+fmt的Println等等输出打印方法会对于实现了stringer接口的类型，会调用其String方法来打印，而不是打印其值
+所以这里fmt.Println(South)打印的是 South.String()的返回值，其返回值是内部那个数组的下表为south=2的那一项，也就是"South"
+
+//参考答案及解析：South。知识点：iota 的用法、类型的 String() 方法。
+
+//根据 iota 的用法推断出 South 的值是 2；另外，如果类型定义了 String() 方法，当使用 fmt.Printf()、fmt.Print() 和 fmt.Println() 会自动使用 String() 方法，实现字符串的打印。
+```
+
+### 63. map内value不可寻址
+
+```go
+下面代码输出什么？
+
+type Math struct {
+    x, y int
+}
+
+var m = map[string]Math{
+    "foo": Math{2, 3},
+}
+
+func main() {
+    m["foo"].x = 4
+    fmt.Println(m["foo"].x)
+}
+A. 4
+B. compilation error
+```
+
+```go
+答案：
+不太确定，B。 map获取到的v似乎是不可寻址的，也就不可以对其进行重赋值，也就是m["foo"].x=4报错
+
+//参考答案及解析：B，编译报错 cannot assign to struct field m["foo"].x in map。错误原因：对于类似 X = Y的赋值操作，必须知道 X 的地址，才能够将 Y 的值赋给 X，但 go 中的 map 的 value 本身是不可寻址的。
+
+有两个解决办法：
+
+1.使用临时变量
+
+type Math struct {
+    x, y int
+}
+
+var m = map[string]Math{
+    "foo": Math{2, 3},
+}
+
+func main() {
+    tmp := m["foo"]
+    tmp.x = 4
+    m["foo"] = tmp
+    fmt.Println(m["foo"].x)
+}
+
+2.修改数据结构
+
+type Math struct {
+    x, y int
+}
+
+var m = map[string]*Math{
+    "foo": &Math{2, 3},
+}
+
+func main() {
+    m["foo"].x = 4
+    fmt.Println(m["foo"].x)
+    fmt.Printf("%#v", m["foo"])   // %#v 格式化输出详细信息
+}
+
+```
+
+### 64. 不同长度数组不可比较
+
+```go
+下面的代码有什么问题？
+
+func main() {
+    fmt.Println([...]int{1} == [2]int{1})
+    fmt.Println([]int{1} == []int{1})
+}
+```
+
+```go
+答案：
+编译错误。两个都不能比较，一个是[1]int和[2]int属于不同类型不能比较，另一个是[]int本身就不可比较
+
+//参考答案及解析：有两处错误
+
+// go 中不同类型是不能比较的，而数组长度是数组类型的一部分，所以 […]int{1} 和 [2]int{1} 是两种不同的类型，不能比较；
+// 切片是不能比较的；
+```
+
+### 65*. 变量作用域
+
+```go
+一道很有代表性的题目，很多老司机都因此翻车！
+
+下面这段代码输出什么？如果编译错误的话，为什么？
+
+var p *int
+
+func foo() (*int, error) {
+    var i int = 5
+    return &i, nil
+}
+
+func bar() {
+    //use p
+    fmt.Println(*p)
+}
+
+func main() {
+    p, err := foo()
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    bar()
+    fmt.Println(*p)
+}
+A. 5 5
+B. runtime error
+
+```
+
+```go
+答案：
+不确定，怎么看都像是A选项。既然题目都说老司机也翻车，那估计是B了，不知道为什么
+
+//参考答案及解析：B。知识点：变量作用域。问题出在操作符:=，对于使用:=定义的变量，如果新变量与同名已定义的变量不在同一个作用域中，那么 Go 会新定义这个变量。对于本例来说，main() 函数里的 p 是新定义的变量，会遮住全局变量 p，导致执行到bar()时程序，全局变量 p 依然还是 nil，程序随即 Crash。
+
+正确的做法是将 main() 函数修改为：
+
+func main() {
+    var err error
+    p, err = foo()
+    if err != nil {
+        fmt.Println(err)
+        return
+    }
+    bar()
+    fmt.Println(*p)
+}
+这道题目引自 Tony Bai 老师的一篇文章，原文讲的很详细，推荐。
+https://tonybai.com/2015/01/13/a-hole-about-variable-scope-in-golang/
+```
+
+### 66*. for-range遍历切片
+
+```go
+下面这段代码能否正常结束？
+
+func main() {
+    v := []int{1, 2, 3}
+    for i := range v {
+        v = append(v, i)
+    }
+}
+
+```
+
+```go
+答案：
+无限循环，退不出来
+
+//参考答案及解析：不会出现死循环，能正常结束。
+循环次数在循环开始前就已经确定，循环内改变切片的长度，不影响循环次数。
+```
+
+### 67. for-range遍历重用变量
+
+```go
+下面这段代码输出什么？为什么？
+
+func main() {
+
+    var m = [...]int{1, 2, 3}
+
+    for i, v := range m {
+        go func() {
+            fmt.Println(i, v)
+        }()
+    }
+
+    time.Sleep(time.Second * 3)
+}
+
+```
+
+```go
+答案：
+2 3
+2 3
+2 3
+
+//参考答案及解析：
+
+// 2 3
+// 2 3
+// 2 3
+
+// 这道题其实应该说明 runtime.GOMAXPROCS(1) 单核运行。多核的话结果就不确定了
+for range 使用短变量声明(:=)的形式迭代变量，需要注意的是，变量 i、v 在每次循环体中都会被重用，而不是重新声明。
+
+各个 goroutine 中输出的 i、v 值都是 for range 循环结束后的 i、v 最终值，而不是各个goroutine启动时的i, v值。可以理解为闭包引用，使用的是上下文环境的值。
+
+两种可行的 fix 方法:
+
+1.使用函数传递
+
+for i, v := range m {
+    go func(i,v int) {
+        fmt.Println(i, v)
+    }(i,v)
+}
+2.使用临时变量保留当前值
+
+for i, v := range m {
+    i := i           // 这里的 := 会重新声明变量，而不是重用
+    v := v
+    go func() {
+        fmt.Println(i, v)
+    }()
+}
+引自：https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/
+```
+
+### 68. defer机制
+
+```go
+下面这段代码输出什么？
+
+func f(n int) (r int) {
+    defer func() {
+        r += n
+        recover()
+    }()
+
+    var f func()
+
+    defer f()
+    f = func() {
+        r += 2
+    }
+    return n + 1
+}
+
+func main() {
+    fmt.Println(f(3))
+}
+```
+
+```go
+答案：
+9. 两个defer，第一个defer注册的时候有用，再return之前会调用它使r = r + n；
+第二个defer由于注册时的f()是函数指针调用的f()，紧接着给f赋值为匿名函数，所以这个也有用
+最后return n+1 应该拆解为两步： r = n+1 ; return r
+所以 r 的变化流程是： r(default 0) -> r=n+1=4 -> r+=2 = 6 -> r+=n =9
+
+// 实验结果是 7. 应该是 第二个defer无效的原因
+
+// 参考答案及解析：7。根据 5 年 Gopher 都不知道的 defer 细节，你别再掉进坑里！ 提到的“三步拆解法”，第一步执行r = n +1，接着执行第二个 defer，由于此时 f() 未定义，引发异常，随即执行第一个 defer，异常被 recover()，程序正常执行，最后 return。
+
+//此题引自知识星球《Go项目实战》。
+```
+
+### 69. for-range副本
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    var a = [5]int{1, 2, 3, 4, 5}
+    var r [5]int
+
+    for i, v := range a {
+        if i == 0 {
+            a[1] = 12
+            a[2] = 13
+        }
+        r[i] = v
+    }
+    fmt.Println("r = ", r)
+    fmt.Println("a = ", a)
+}
+```
+
+```go
+答案：
+for-range 切片应该也只是确定了遍历次数或者叫遍历范围，底层实现应该还是基于下标索引。对于遍历期间切片内部元素的变化应该是管不到的。
+所以第一次，i=0，直接就使得 a => [1, 12, 13, 4, 5]
+r = [1, 12, 13, 4, 5]
+a = [1, 12, 13, 4, 5]
+
+//参考答案及解析：
+
+r =  [1 2 3 4 5]
+a =  [1 12 13 4 5]
+range 表达式是副本参与循环，就是说例子中参与循环的是 a 的副本，而不是真正的 a。就这个例子来说，假设 b 是 a 的副本，则 range 循环代码是这样的：
+
+for i, v := range b {
+    if i == 0 {
+        a[1] = 12
+        a[2] = 13
+    }
+    r[i] = v
+}
+因此无论 a 被如何修改，其副本 b 依旧保持原值，并且参与循环的是 b，因此 v 从 b 中取出的仍旧是 a 的原值，而非修改后的值。
+
+如果想要 r 和 a 一样输出，修复办法：
+
+func main() {
+    var a = [5]int{1, 2, 3, 4, 5}
+    var r [5]int
+
+    for i, v := range &a {
+        if i == 0 {
+            a[1] = 12
+            a[2] = 13
+        }
+        r[i] = v
+    }
+    fmt.Println("r = ", r)
+    fmt.Println("a = ", a)
+}
+输出：
+
+r =  [1 12 13 4 5]
+a =  [1 12 13 4 5]
+修复代码中，使用 *[5]int 作为 range 表达式，其副本依旧是一个指向原数组 a 的指针，因此后续所有循环中均是 &a 指向的原数组亲自参与的，因此 v 能从 &a 指向的原数组中取出 a 修改后的值。
+
+引自：https://tonybai.com/2015/09/17/7-things-you-may-not-pay-attation-to-in-go/
+```
+
+### 70.
+
+```go
+下面这段代码输出什么？
+
+func change(s ...int) {
+    s = append(s,3)
+}
+
+func main() {
+    slice := make([]int,5,5)
+    slice[0] = 1
+    slice[1] = 2
+    change(slice...)
+    fmt.Println(slice)
+    change(slice[0:2]...)
+    fmt.Println(slice)
+}
+
+
+```
+
+```go
+答案：
+
+
+//
+```
+
+### 71.
+
+```go
+下面这段代码输出什么？
+
+func main() {
+    var a = []int{1, 2, 3, 4, 5}
+    var r [5]int
+
+    for i, v := range a {
+        if i == 0 {
+            a[1] = 12
+            a[2] = 13
+        }
+        r[i] = v
+    }
+    fmt.Println("r = ", r)
+    fmt.Println("a = ", a)
+}
+```
+
+```go
+答案：
+
+
+//
+```
+
+### 72.
+
+```go
+
+```
+
+```go
+答案：
+
+
+//
+```
+
+// 32
