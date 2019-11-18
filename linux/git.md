@@ -63,3 +63,18 @@ git pull --allow-unrelated-histories
 ```
 
 ![20190723214818](/images/TIM截图20190723214818.png)
+
+## 6. 本地创建分支并关联远程分支
+
+```shell
+# 创建本地分支
+git branch 分支名
+# 切换到本地分支
+git checkout 分支名
+# 创建本地分支并切换
+git checkout -b 分支名
+# 提交本地分支到远程仓库
+git push origin 本地分支名  # 自动就创建了远程同名分支
+# 新建本地分支与远程分支相关联
+git branch -set-upstream 本地新建分支名 origin/远程分支名
+```
