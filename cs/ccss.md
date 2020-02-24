@@ -14,7 +14,7 @@ keywords: ["cs"]
 
 ## 2. 电子计算机
 
-![ccss02](/mages/ccss02.png)
+![ccss02](/images/ccss02.png)
 <!--![ccss02](../../../static/images/ccss02.png)-->
 
 ## 3. 布尔逻辑和逻辑门
