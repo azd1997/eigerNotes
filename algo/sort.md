@@ -697,7 +697,7 @@ func _partition3(nums *[]int, l, r int) (int, int) {
         }
         // 小于base i右移lt右移
         if (*nums)[i] < (*nums)[l] {
-            (*nums)[i], (*nums)[lt+1] = (*nums)[l+1], (*nums)[i]
+            (*nums)[i], (*nums)[lt+1] = (*nums)[lt+1], (*nums)[i]
             i++; lt++; continue
         }
         // 大于base gt左移, 新交换过来的 i 仍需处理
@@ -806,11 +806,215 @@ func _partition(nums *[]int, k, l, r int) int {
 
 ### 7.1 堆与优先队列
 
+- 优先队列是堆极为重要的一个应用
 - 优先队列： 出队顺序与优先级相关，与入队顺序无关。
   - 医院看病：急诊/普通
-  - CPU调度
+  - CPU任务调度
+  - 游戏AI优先攻击
+- 优先队列的意义：
+  - 对于**从$N$个元素中选出前$M$个元素**问题：
+    - 使用全排序算法(快排等)$O(NlogN)$
+    - 使用优先队列$O(NlogM)$
+    - 尤其是当N很大时，优势明显
+- 优先队列的实现：
+  - 普通数组：入队$O(1)$，出队$O(n)$
+  - 顺序数组：入队$O(n)$，出队$O(1)$
+  - 堆：入队$O(logn)$，出队$O(logn)$
+- 堆的特点：适合**动态**数据的维护
 
-### 7.1 练习
+### 7.2 堆的存储结构
+
+- 二叉堆(基于**完全二叉树**)
+  - 最大堆(每个节点的值总小于等于其父节点的值)和最小堆
+- 对于堆，使用**数组存储**比使用节点构成的树更好
+  - 这是因为堆是完全二叉树，完全二叉树适合使用数组存储
+  - 若根节点设为下标为$1$，
+    - 则对于下标为$i$的节点，其左右子节点下标分别为$2*i$、$2i+1$
+    - 对于下标为$i$的节点，其父节点下标为$i/2$
+  - 若根节点下表设为$0$，相应修改即可
+
+一个固定容量、存储整型的最大堆的实现：
+(go语言标准库提供了heap.Interface接口，可以将任何实现了其的结构转化为堆)
+
+```go
+type MaxHeap struct {
+    data []int
+    size int
+}
+
+// 新建
+func NewMaxHeap(cap int) *MaxHeap {
+    return &MaxHeap{
+        data: make([]int, cap+1),
+        size: 0,
+    }
+}
+
+// 数据数量
+func (h *MaxHeap) Size() int {return h.size}
+// 是否为空
+func (h *MaxHeap) IsEmpty() bool {return h.size == 0}
+
+// 添加元素
+func (h *MaxHeap) Insert(v int) {
+    // 容量是否足够？
+    if h.size+1 == len(h.data) {return}
+
+    h.data[h.size+1] = v
+    h.size++
+
+    // 上移
+    h.shiftUp(h.size)   // 将下标为h.size的新元素进行上浮
+}
+
+// 上浮 shift up
+func (h *MaxHeap) shiftUp(k int) {
+    // 不断将新加入的元素与其父节点进行比较，不断向上交换，直至比父节点小
+    for k > 1 && h.data[k/2] < h.data[k] {      // 注意 k>1 防止越界
+        h.data[k/2], h.data[k] = h.data[k], h.data[k/2]
+        k /= 2  // 上浮一层
+    }
+
+}
+
+// 取出根节点元素并移除
+// 做法是交换根节点与末尾节点，再将末尾节点不断下沉到应放的位置
+func (h *MaxHeap) RemoveMax() int {
+    // 容量是否为空？
+    if h.size == 0 {return math.MinInt32}   // 应当报错
+
+    // 交换最大值（根节点）与末尾节点
+    h.data[1], h.data[h.size] = h.data[h.size], h.data[1]
+    h.size--
+
+    // 将新的根节点元素不断下沉，直至合适位置
+    h.shiftDown(1)
+
+    return h.data[h.size+1]
+}
+
+// 下沉 shift down
+func (h *MaxHeap) shiftDown(k int) {
+    // 不断将当前节点与左右子节点进行比较，不断向下交换，直至比两个孩子都大
+    for 2 * k <= h.size {      // 防止越界
+
+        // 需要注意的是，可能没有右孩子! 因此目标交换的节点应默认为左孩子，
+        // 再将左右孩子进行比较，选大的和当前节点进行交换
+        left := 2*k     // 左孩子下标
+        if left+1 <= h.size && h.data[left+1] > h.data[left] {
+            left++  // 这种情况下 left用来标记右孩子
+        }
+        // 当前节点比两个孩子都大，无需继续
+        if h.data[k] >= h.data[left] {
+            break
+        }
+        // 和大的那个孩子交换
+        h.data[left], h.data[k] = h.data[k], h.data[left]
+        // k 下移一层
+        k = left
+    }
+}
+```
+
+- 优化： 上面的实现中使用交换进行上浮和下沉，这可以使用一个变量记录待上浮/下沉的值，然后用不断的赋值来实现。参考插入排序的实现
+
+### 7.3 基础堆排序与heapify
+
+- 有了堆结构之后，堆排序实现如下：
+
+```go
+func heapSort(nums []int) {
+    n := len(nums)
+    if n < 2 {return}
+
+    heap := NewMaxHeap(n)
+    for i:=0; i<n; i++ {
+        heap.Insert(nums[i])
+    }
+
+    for i:=n-1; i>=0; i-- {
+        nums[i] = heap.RemoveMax()
+    }
+}
+```
+
+- **Heapify**
+  - 对于一开始有一定长度的数组（长度为$n$），前面的普通堆排序(将数据逐一插入空堆)需要对$n$个元素都进行一次插入操作，时间复杂度为$O(nlogn)$
+  - 但事实上，可以直接根据数组进行堆化（Heapify），复杂度为$O(n)$
+  - 堆化步骤：
+1. 设有数组长度为$n$，开辟新数组长度为$n+1$
+2. 定位到此时二叉树(还么开始堆化)的最后一个节点下标为$n$
+3. 其父节点为$n/2$，为二叉树中**第一个不是叶子的节点**的索引。堆化从$n/2$开始
+4. 对于当前节点$n/2$，与其左右孩子比较，尝试下沉到合适位置
+5. 继续对$n/2-1, \cdots, 1$进行下沉，找到其位置，当前$n/2$个节点找到应放的位置后，整个数组就完成了堆化
+
+```go
+func NewMaxHeapFromInts(arr []int) *MaxHeap {
+    n := len(arr)
+    h := &MaxHeap{append([]int{0}, arr...), n}
+    start := n/2
+    for i:=start; i>=1; i-- {
+        h.shiftDown(i)
+    }
+    return h    // 现在已经堆化成功
+}
+```
+
+### 7.4 原地堆排序
+
+- 在前面的普通堆排序或者heapify中，使用到了$O(n)$的空间，如同归并排序一样，$O(n)$的空间复杂度在数据量大时是难以承受的代价
+- 其实可以原地进行堆排序，实现$O(1)$空间，但是它需要注意几点：
+  - 下标从0开始（因为给定的数据数组下标就是从0开始的）
+    - 节点i的父节点下标为 $(i-1)/2$
+    - 节点i的左右子节点下标为 $2i+1, 2i+2$
+  - 第一步，将整个数组原地堆化成最大堆
+  - 第二步，每次将$nums[0]$（堆顶）与指针$p$（从最右端开始）指向的元素交换位置，然后对$nums[:p]$区间里的新堆顶$nums[0]$不断下沉以使得$nums[:p]$仍是一个最大堆。这个过程就是不断将最大值给交换到区间右侧的其最终该放的位置，这有点类似于选择排序，只不过这里通过堆顶来选择处理的元素
+
+```go
+func heapSort3(nums []int) []int {
+	// 注意： 原地堆排序的堆是下标0为堆顶
+	// 节点i的父节点下标为 （i-1）/2
+	// 节点i的左右子节点下标为 2i+1, 2i+2
+
+	n := len(nums)
+	if n < 2 {return nums}
+
+	// 1. 对nums堆化(heapify)  最后一个非叶子节点的下标的计算公式为： (最后一个元素索引值-1) / 2
+	for i:=(n-2)/2; i>=0; i-- {
+		_shiftDown(&nums, n, i)
+	}
+
+	// 2. 不断将堆顶元素交换到后面，然后对新堆顶进行下沉
+	for i:=n-1; i>0; i-- {  // i==0情况没必要讨论，只剩一个元素
+		nums[i], nums[0] = nums[0], nums[i]
+		_shiftDown(&nums, i, 0)	// 对 nums[0:i](不含i)区间进行堆化(只把新堆顶下沉合适位置即可)
+	}
+
+	return nums
+}
+
+func _shiftDown(nums *[]int, n, k int) {
+	for 2*k+1 < n {		// 注意这里n是取不到的
+		left := 2*k+1   // 左孩子
+		if left+1 < n && (*nums)[left+1] > (*nums)[left] {
+			left = left + 1     // left现在表示右孩子
+		}
+		// 当前节点比左右孩子都大，则无需继续
+		if (*nums)[k] >= (*nums)[left] {break}
+		// 将当前节点与大孩子交换
+		(*nums)[k], (*nums)[left] = (*nums)[left], (*nums)[k]
+		// k下移一层
+		k = left
+	}
+}
+
+```
+
+### 7.5 索引堆（Index Heap）
+
+
+
+### 7.9 练习
 
 - 练习一： [数据流中的第k大元素](https://leetcode-cn.com/problems/kth-largest-element-in-a-stream/)
 
