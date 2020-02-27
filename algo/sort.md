@@ -632,7 +632,7 @@ func _partition2(nums *[]int, l, r int) int {
 }
 ```
 
-### 6.4 三路快排 (重复元素测例下缩减小排序空间的优化)
+### 6.4 三路快排 (重复元素测例下缩减待排序空间的优化)
 
 - 思路
   - 对于前面的双路快排，其确保了即使区间内存在大量重复元素情况下左右分区的平衡性，也就是保证了与归并排序相似的稳定的$O(nlogn)$排序： 无论数组原先含有多少重复元素，都一视同仁，参与到归并的$merge$阶段或者是双路快排的$partition$阶段。
@@ -650,7 +650,7 @@ func _partition2(nums *[]int, l, r int) int {
      2. 若$nums[i] < base$，则交换 $nums[i]$ 与 $nums[lt+1]$，$i$右移，$lt$右移
      3. 若$nums[i] = base$， 则 $i$ 右移
      4. 最终 $i = gt$ 停止
-  4. 交换 $nums[i]$ 与 $nums[lt]$。当前轮 $partition$ 结束。 $p1 = lt, p2 = gt-1$
+  4. 交换 $nums[l]$ 与 $nums[lt]$。当前轮 $partition$ 结束。 $p1 = lt, p2 = gt-1$
 - 实现
 
 ```go
@@ -718,7 +718,7 @@ func _partition3(nums *[]int, l, r int) (int, int) {
 
 |最好时间|最坏时间|平均时间|空间|稳定性|
 |:-:|:-:|:-:|:-:|:-:|
-|$O(nlogn)$|$O(nlogn)$|$O(n^2)$|$O(1)$|不稳定|
+|$O(nlogn)$|$O(n^2)$|$O(n^2)$|$O(1)$|不稳定|
 
 ### 6.6 分治思想
 
@@ -729,7 +729,83 @@ func _partition3(nums *[]int, l, r int) (int, int) {
   - 归并排序**分**是简单的二分，重点在**合**的步骤
   - 快速排序**合**是简单的区间连接(都不需要操作)，重点在于**分**的步骤
 
-### 2.3 堆排序
+### 6.7 练习
+
+- [数组中的第k大元素](https://leetcode-cn.com/problems/kth-largest-element-in-an-array/)
+
+        在未排序的数组中找到第 k 个最大的元素。请注意，你需要找的是数组排序后的第 k 个最大的元素，而不是第 k 个不同的元素。
+
+        示例 1:
+
+        输入: [3,2,1,5,6,4] 和 k = 2
+        输出: 5
+        示例 2:
+
+        输入: [3,2,3,1,2,4,5,5,6] 和 k = 4
+        输出: 4
+        说明:
+
+        你可以假设 k 总是有效的，且 1 ≤ k ≤ 数组的长度。
+
+- 解答
+
+```go
+// 常规解法：
+// 1. 排序后倒序遍历k   O(nlogn)/O(1) 快排  O(nlogn)/O(n) 归并 O(nlogk)/O(k) 堆排序
+// 2. 二分查找: 先求数组最大值max和最小值min，取数值mid，看数组中比mid大的数有多少，若大于k则说明mid过小，将值区间缩小为[mid,max]继续二分 O(nlogn)/O(1)
+// 3. 最优解：利用快速排序，快速排序的核心是每一次partition都将选取的基数放置到了最终位置上。利用这个选出的基数最终放置的位置与k的关系，可以缩减排序区间，实现 O(n)/O(1)的解法
+// 解题时直接使用普通随机化快排，就不使用三路快排了。
+
+// 普通快排 + 缩减排序空间
+func findKthLargest(nums []int, k int) int {
+    n := len(nums)
+    if n < k {return -1}
+
+    return _quick(&nums, n, k, 0, n-1)
+}
+
+func _quick(nums *[]int, n, k, l, r int) int {
+    if l == r {return (*nums)[l]}   // 区间只剩一个元素，只可能是这个了
+
+    p := _partition(nums, k, l, r)
+
+    // 必然会遇到第k大元素，遇到了就没必要继续递归下去了
+    if p == (n-k) {return (*nums)[p]}
+
+    // 否则向靠近n-k侧递归
+    if p < n-k {
+        return _quick(nums, n, k, p+1, r)
+    } else {    // > n-k
+        return _quick(nums, n, k, l, p-1)
+    }
+}
+
+
+func _partition(nums *[]int, k, l, r int) int {
+    // 随机选取基数
+    randIdx := rand.Intn(r-l+1) + l
+    // 交换到最左边
+    (*nums)[l], (*nums)[randIdx] = (*nums)[randIdx], (*nums)[l]
+
+    p := l    // p记录Less与Right交界，p为Less右端点，包含在内
+    // 向右遍历
+    for i:=l+1; i<=r; i++ {
+        if (*nums)[i] < (*nums)[l] {
+            (*nums)[i], (*nums)[p+1] = (*nums)[p+1], (*nums)[i]
+            p++ // p后移
+        }
+    }
+    // 交换基数与Less末位，交换后p为基数所在
+    (*nums)[l], (*nums)[p] = (*nums)[p], (*nums)[l]
+    return p
+}
+```
+
+## 7. 堆排序
+
+### 7.1 练习
+
+- 练习一： [数据流中的第k大元素](https://leetcode-cn.com/problems/kth-largest-element-in-a-stream/)
 
 
 ## 其他参考材料
