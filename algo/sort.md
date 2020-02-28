@@ -1012,12 +1012,391 @@ func _shiftDown(nums *[]int, n, k int) {
 
 ### 7.5 索引堆（Index Heap）
 
+- 为什么要索引堆？
+  - 原因一：复杂数据结构赋值/交换开销较大（可以使用指针替代）
+  - 原因二（重要）：元素位置在堆化后发生变化，难以定位。
+    - （堆只提供出堆入堆操作）
+    - 更新困难，需要遍历
+- 索引堆的核心思路：将序列中元素的索引构建成堆。
+  - 堆化过程中只是索引换了位置，对于调用者来说使用索引还是可以直接$O(1)$访问元素
+
+一个以下标0开始的索引最大堆实现：
+
+```go
+// 索引堆 Index Heap
+
+type IndexMaxHeap struct {
+	data []int
+	indexes []int   // 索引数组
+	size int
+}
+
+// 新建
+func NewIndexMaxHeap(cap int) *IndexMaxHeap {
+	return &IndexMaxHeap{
+		data: make([]int, cap),
+		indexes: make([]int, cap),
+		size: 0,
+	}
+}
+
+// 数据数量
+func (h *IndexMaxHeap) Size() int {return h.size}
+// 是否为空
+func (h *IndexMaxHeap) IsEmpty() bool {return h.size == 0}
+
+////////////////////////////////////////
+// 增加indexes操作
+
+// 添加元素
+func (h *IndexMaxHeap) Insert(i int, v int) {
+	// 容量是否足够？
+	if h.size == len(h.data) {return}
+	// 索引是否越界
+	if i < 0 || i >= len(h.data) {return}
+
+	h.data[i] = v  // 元素存于data
+	h.indexes[h.size] = i     // 索引存于indexes 要注意size与下标是减1的关系
+	h.size++
+
+	// 上移
+	h.shiftUp(h.size-1)   // 将下标为h.size-1的新元素进行上浮
+}
+
+// 上浮 shift up
+func (h *IndexMaxHeap) shiftUp(k int) {
+	// 不断将新加入的元素与其父节点进行比较，不断向上交换，直至比父节点小
+	for k > 0 && h.data[h.indexes[(k-1)/2]] < h.data[h.indexes[k]] {      // 注意 k>0 防止越界
+		// 交换的是indexes数组！！！
+		h.indexes[(k-1)/2], h.indexes[k] = h.indexes[k], h.indexes[(k-1)/2]
+		k =  (k-1) / 2  // 上浮一层
+	}
+}
+
+// 取出根节点元素并移除
+// 做法是交换根节点与末尾节点，再将末尾节点不断下沉到应放的位置
+func (h *IndexMaxHeap) RemoveMax() int {
+	// 容量是否为空？
+	if h.size == 0 {return math.MinInt32}   // 应当报错
+
+	// 交换最大值（根节点）与末尾节点 交换的是indexes数组
+	h.indexes[0], h.indexes[h.size-1] = h.indexes[h.size-1], h.indexes[0]
+	h.size--
+
+	// 将新的根节点元素不断下沉，直至合适位置
+	h.shiftDown(0)
+
+	return h.data[h.indexes[h.size]]
+}
+
+// 下沉 shift down
+func (h *IndexMaxHeap) shiftDown(k int) {
+	// 不断将当前节点与左右子节点进行比较，不断向下交换，直至比两个孩子都大
+	for 2 * k + 1 <= h.size-1 {      // 防止越界
+
+		// 需要注意的是，可能没有右孩子! 因此目标交换的节点应默认为左孩子，
+		// 再将左右孩子进行比较，选大的和当前节点进行交换
+		left := 2*k + 1    // 左孩子下标
+		if left+1 <= h.size -1 && h.data[h.indexes[left+1]] > h.data[h.indexes[left]] {
+			left++  // 这种情况下 left用来标记右孩子
+		}
+		// 当前节点比两个孩子都大，无需继续
+		if h.data[h.indexes[k]] >= h.data[h.indexes[left]] {
+			break
+		}
+		// 和大的那个孩子交换
+		h.indexes[left], h.indexes[k] = h.indexes[k], h.indexes[left]
+		// k 下移一层
+		k = left
+	}
+}
+
+// 返回最大元素的索引
+func (h *IndexMaxHeap) RemoveMaxAndReturnIndex() int {
+	// 不能为空
+	if h.size==0 {return -1}    // 报错
+
+	ret := h.indexes[0]     // 最大值索引
+
+	// 删除堆顶
+	h.indexes[0], h.indexes[h.size-1] = h.indexes[h.size-1], h.indexes[0]
+	h.size--
+	h.shiftDown(0)
+
+	return ret
+}
+
+// 根据给定索引值返回数据
+func (h *IndexMaxHeap) GetItem(i int) int {
+	// 返回数据
+	return h.data[i]
+}
+
+// 修改 O(n+logn)
+func (h *IndexMaxHeap) Change(i int, newV int) {
+	// 索引是否有效
+	if i < 0 || i >= h.size {return}  // 报错
+
+	// 先直接将data更新
+	h.data[i] = newV
+
+	// 再找到index[j] = i 的这个j，对j作上浮和下沉
+	// j 代表着 data[i] 在堆中的位置
+	// 这里只能线性遍历
+	for j:=0; j<h.size; j++ {
+		if h.indexes[j] == i {
+			h.shiftUp(j)		// 上浮和下沉操作可交换位置
+			h.shiftDown(j)
+			return
+		}
+	}
+}
+```
+
+### 7.6 索引堆优化
+
+- 在上一节索引堆的实现中$change$操作的复杂度是线性的，在大数据集情况下，整体时间复杂度达到$O(n^2)$，这往往是不能接受的
+- 要想优化$change$操作复杂度，那么要有一个能够**根据索引$i$快速找到对应的$j$**
+- 这就用到了**反向索引**的思路（事实上在工程代码中经常需要设置反向索引）
+- 普通索引堆使用了 $indexes$数组，其满足$indexes[j] = i$
+- 反向索引就是用一个数组$reverse$记录$reverse[i] = j$
+- 这也等价于下面两条等式：
+  - $indexes[reverse[i]] = i$
+  - $reverse[indexes[i]] = i$
+  - 换句话说，需要保证“$reverse[indexes[i]] = i$”才能保证“$reverse$记录$reverse[i] = j$”
+
+```go
+// 索引堆 Index Heap + 反向索引优化change操作
+
+type IndexMaxHeap2 struct {
+	data []int
+	indexes []int   // 索引数组
+	reverse []int   // 反向索引
+	size int
+}
+
+// 新建
+func NewIndexMaxHeap2(cap int) *IndexMaxHeap2 {
+	reverse := make([]int, cap)
+	for i:=0; i<cap; i++ {
+		reverse[i] = -1
+	}
+	return &IndexMaxHeap2{
+		data: make([]int, cap),
+		indexes: make([]int, cap),
+		reverse: reverse,   // 设置默认值为-1，为-1代表反向索引指向的索引不存在
+		size: 0,
+	}
+}
+
+// 数据数量
+func (h *IndexMaxHeap2) Size() int {return h.size}
+// 是否为空
+func (h *IndexMaxHeap2) IsEmpty() bool {return h.size == 0}
+
+////////////////////////////////////////
+// 增加indexes操作
+
+// 添加元素
+func (h *IndexMaxHeap2) Insert(i int, v int) {
+	// 容量是否足够？
+	if h.size == len(h.data) {return}
+	// 索引是否越界
+	if i < 0 || i >= len(h.data) {return}
+
+	h.data[i] = v  // 元素存于data
+	h.indexes[h.size] = i     // 索引存于indexes 要注意size与下标是减1的关系
+
+	//////////////////
+
+	h.reverse[i] = h.size      // 记录reverse
+
+	//////////////////
+
+	h.size++
+
+	// 上移
+	h.shiftUp(h.size-1)   // 将下标为h.size-1的新元素进行上浮
+}
+
+// 上浮 shift up
+func (h *IndexMaxHeap2) shiftUp(k int) {
+	// 不断将新加入的元素与其父节点进行比较，不断向上交换，直至比父节点小
+	for k > 0 && h.data[h.indexes[(k-1)/2]] < h.data[h.indexes[k]] {      // 注意 k>0 防止越界
+		// 交换的是indexes数组！！！
+		h.indexes[(k-1)/2], h.indexes[k] = h.indexes[k], h.indexes[(k-1)/2]
+
+		// reverse[indexes[i]] = i
+		// 这条是性质，但是约束
+
+		h.reverse[h.indexes[(k-1)/2]] = (k-1)/2     // h.indexes[(k-1)/2] 表示数据所对应的索引，这个索引指向的数据是不变的，但是索引本身在indexes数组中的位置是变化的
+		h.reverse[h.indexes[k]] = k
+
+		k =  (k-1) / 2  // 上浮一层
+	}
+}
+
+// 取出根节点元素并移除
+// 做法是交换根节点与末尾节点，再将末尾节点不断下沉到应放的位置
+func (h *IndexMaxHeap2) RemoveMax() int {
+	// 容量是否为空？
+	if h.size == 0 {return math.MinInt32}   // 应当报错
+
+	// 交换最大值（根节点）与末尾节点 交换的是indexes数组
+	h.indexes[0], h.indexes[h.size-1] = h.indexes[h.size-1], h.indexes[0]
+
+	// reverse数组
+	h.reverse[h.indexes[0]] = 0
+	h.reverse[h.indexes[h.size-1]] = -1     // 交换之后，这个位置是被删除的，所以将之置-1
+
+	h.size--
+
+	// 将新的根节点元素不断下沉，直至合适位置
+	h.shiftDown(0)
+
+	return h.data[h.indexes[h.size]]
+}
+
+// 下沉 shift down
+func (h *IndexMaxHeap2) shiftDown(k int) {
+	// 不断将当前节点与左右子节点进行比较，不断向下交换，直至比两个孩子都大
+	for 2 * k + 1 <= h.size-1 {      // 防止越界
+
+		// 需要注意的是，可能没有右孩子! 因此目标交换的节点应默认为左孩子，
+		// 再将左右孩子进行比较，选大的和当前节点进行交换
+		left := 2*k + 1    // 左孩子下标
+		if left+1 <= h.size -1 && h.data[h.indexes[left+1]] > h.data[h.indexes[left]] {
+			left++  // 这种情况下 left用来标记右孩子
+		}
+		// 当前节点比两个孩子都大，无需继续
+		if h.data[h.indexes[k]] >= h.data[h.indexes[left]] {
+			break
+		}
+		// 和大的那个孩子交换
+		h.indexes[left], h.indexes[k] = h.indexes[k], h.indexes[left]
+
+		// reverse数组
+		h.reverse[h.indexes[left]] = left
+		h.reverse[h.indexes[k]] = k
+
+		// k 下移一层
+		k = left
+	}
+}
+
+// 返回最大元素的索引
+func (h *IndexMaxHeap2) RemoveMaxAndReturnIndex() int {
+	// 不能为空
+	if h.size==0 {return -1}    // 报错
+
+	ret := h.indexes[0]     // 最大值索引
+
+	// 删除堆顶
+	h.indexes[0], h.indexes[h.size-1] = h.indexes[h.size-1], h.indexes[0]
+
+	// reverse数组
+	h.reverse[h.indexes[0]] = 0
+	h.reverse[h.indexes[h.size-1]] = -1     // 交换之后，这个位置是被删除的，所以将之置-1
+
+
+	h.size--
+	h.shiftDown(0)
+
+	return ret
+}
+
+// 根据给定索引值返回数据
+func (h *IndexMaxHeap2) GetItem(i int) int {
+	// 索引是否有效
+	if !h.Contains(i) {return math.MinInt32}  // 报错
+	// 返回数据
+	return h.data[i]
+}
+
+// 修改 O(n+logn)
+func (h *IndexMaxHeap2) Change(i int, newV int) {
+	// 索引是否有效
+	if !h.Contains(i) {return}  // 报错
+
+	// 先直接将data更新
+	h.data[i] = newV
+
+	// 再找到index[j] = i 的这个j，对j作上浮和下沉
+	// j 代表着 data[i] 在堆中的位置
+	// 这里只能线性遍历
+	// for j:=0; j<h.size; j++ {
+	// 	if h.indexes[j] == i {
+	// 		h.shiftUp(j)		// 上浮和下沉操作可交换位置
+	// 		h.shiftDown(j)
+	// 		return
+	// 	}
+	// }
+
+	j := h.reverse[i]
+	h.shiftUp(j)
+	h.shiftDown(j)
+
+}
+
+
+// contains
+func (h *IndexMaxHeap2) Contains(i int) bool {
+	// 索引首先不能出界
+	if i<0 || i>=h.size {return false}
+	// 接着要判断reverse数组是否包含其。 因为索引在删除时或者插入时不是连续增加的(你也不知道哪就"空出一个位置"了)
+	return h.reverse[i] != -1
+}
+
+```
+
+### 7.7 堆的应用
+
+1. 优先队列
+2. 在$N$个元素中选出前$M$个元素($N>>M$)，
+3. 多路归并排序
+   - 普通归并每次区间二分。两个相邻区间的合并依赖双指针法
+   - 可以每次 $d$ 分，每次取每个分段首位放在一起进行小顶堆排序，堆顶出列
+   - 多路归并可以减小归并排序递归树的深度，让树变得扁平； 但是， 每次合并时比较的元素也就更多。因此选取一个合适的$d$值需要根据具体设备/数据集进行测试选出
+   - 特殊情况：当$d = n$ 时，归并排序退化成堆排序
+4. $d$叉堆
+   - 前面实现的是二叉堆
+   - 性能平衡：$d$越多，树高越矮； 但每次shiftDown/shiftUp操作要比较的元素也就越多
+5. 最大堆、最小堆、最大索引堆、最小索引堆
+6. 最大最小队列
+   - 存储数据流的同时能够高效返回最大值和最小值
+   - 思路：维护一个大顶堆、一个小顶堆，两个堆存同一份数据
+7. 二项堆
+8. 斐波那契堆
+
+### 7.8 堆的实现细节优化
+
+- $shiftDown/shiftUp$ 中使用赋值操作替代交换(swap)。也就是要用一个变量备份上浮或下沉的那个数据先。 （参考插入排序）
+- 表示堆的数组从0开始索引
+- 堆底层数组动态扩容
 
 
 ### 7.9 练习
 
 - 练习一： [数据流中的第k大元素](https://leetcode-cn.com/problems/kth-largest-element-in-a-stream/)
+- 思路： 维护一个大小为k的小顶堆
 
+
+## 8. 排序总结
+
+||时间复杂度|原地排序|空间复杂度|可以稳定|
+|-|-|-|-|-|-|
+|冒泡排序|$n^2$|是|$O(1)$|是|
+|选择排序|$n^2$|是|$O(1)$|是|
+|插入排序|$n-n^2$|是|$O(1)$|是|
+|希尔排序|$n^{6/5}?$|是|$O(1)$|是|
+|归并排序|$nlogn$|否|$n+logn$|是|
+|快速排序|$nlogn$|是|$logn$|否|
+|三路快排|$n~nlogn$|是|$logn$|否|
+|堆排序|$nlogn$|是|$1$|否|
+
+- $O(logn)$的空间复杂度指的是递归调用栈占用的大小
+- 可以通过**自定义比较函数让排序函数不存在稳定性问题**
+  - 例如学生成绩排名时，自定义比较函数先比较总成绩，总成绩一样再比较语文成绩，成绩完全一样，再比较名字字符串，或者再比较上一次排名,.....
 
 ## 其他参考材料
 
