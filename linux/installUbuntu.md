@@ -766,7 +766,7 @@ SendAnywhere 全平台通用。
 
 <http://c.biancheng.net/view/739.html>
 
-## 关于管理程序开机自启动的问题
+## 22. 关于管理程序开机自启动的问题
 
 参考： <https://blog.csdn.net/qq_14989227/article/details/79227283>
 
@@ -810,3 +810,21 @@ Executing: /lib/systemd/systemd-sysv-install disable mongodb
 eiger@eiger-ThinkPad-X1-Carbon-3rd:~$
 ```
 
+## 23. 终端将文件内容拷贝至剪贴板
+
+使用`xsel`工具
+
+```shell
+// b 代表 clipboard剪贴板
+
+// 将剪贴板内容输出到终端（标准输出）
+xsel -b -o
+// 将终端内容读到剪贴板(覆盖原内容)
+xsel -b -i
+// 将终端内容追加到剪贴板
+xsel -b -a
+// 读取文件内容放到剪贴板
+cat 123.txt | xsel -b -i
+// 清除剪贴板
+xsel -c
+```
