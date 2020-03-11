@@ -55,7 +55,7 @@ func preorder(root *TreeNode) {
     // 由于栈是倒序输出，因此需要先将右压入栈中，后将左压入。
     for len(stack) != 0 {   // 栈不为空则继续
         cur := stack[len(stack)-1]
-        satck = stack[:len(stack)-1]   // 栈顶元素出栈
+        stack = stack[:len(stack)-1]   // 栈顶元素出栈
 
         // 对当前元素处理
         // do something

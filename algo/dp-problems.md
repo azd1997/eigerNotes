@@ -628,14 +628,60 @@ val = [4,2,3]
 按照股票问题总结的动态规划穷举步骤，来为背包问题提取解题框架
 
   1. 状态
-     - 这个问题可以描述为：背包承重量还剩$w$，有$n$个物品可以选择装，获得的最大价值是$dp[w][n]$ 
+     - 这个问题可以描述为：背包承重量还剩$w$，有$n$个物品可以选择装，获得的最大价值是$dp[n][w]$ 
   2. 选择
      - 装，或者不装
   3. 得到穷举框架
 
 ```go
-    for w in [0, W]:
-        for n in [0, N]:
-            dp[w][n] = 择优(装， 不装)
+    for n in [0, N]:
+        for w in [0, W]:
+            dp[n][w] = 择优(装， 不装)
 ```
-  4. 
+  4. 明确`dp`含义
+     - 对于前$i$件物品，当前背包的容量为$w$，可装下的最大价值为$dp[i][w]$
+     - 最终要求的答案就是$dp[N][W]$
+     - base case: dp[0][w] = dp[i][0] = 0
+  5. 进一步细化框架：
+```go
+    dp[N+1][W+1]
+    dp[0][w] = dp[i][0] = 0
+
+    for i in [1, N]:
+        for w in [1, W]:
+            dp[n][w] = max(装， 不装)
+    return dp[N][W]        
+```
+  6. 状态转移
+     - 装： 对于第i-1个物品，dp[i][w] = dp[i-1][w-wt[i-1]] + val[i-1]
+     - 不装： dp[i][w] = dp[i-1][w] 
+     - dp[i][w] = max(dp[i-1][w-wt[i-1]] + val[i-1], dp[i][w] = dp[i-1][w])
+
+代码如下：
+```go
+func bag(W, N int, wt, val []int) int {
+    dp := make([][]int, N+1)
+    for i:=0; i<N; i++ {
+        dp[i] = make([]int, W+1)
+    }
+    // base case 已在初始化中做好
+
+    for i:=1; i<=N; i++ {
+        for w:=1; w<=W; w++ {
+            if w - wt[i-1] < 0 {
+                // 当前容量装不下
+                dp[i][w] = dp[i-1][w]
+            } else {
+                // 选择
+                dp[i][w] = max(dp[i-1][w-wt[i-1]] + val[i-1], dp[i-1][w])
+            }
+        } 
+    }
+    return dp[N][W]
+}
+```
+
+
+
+
+
