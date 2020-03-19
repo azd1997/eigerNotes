@@ -9,6 +9,8 @@ keywords: ["二分查找"]
 
 ## 0. 导语
 
+强烈推荐labuladong的二分查找模板！！！
+
 ## 1. 模板一
 
 模板 #1 用于查找可以通过访问数组中的**单个索引**来确定的元素或条件。
@@ -436,6 +438,47 @@ func findMin(nums []int) int {
     }
     return -1   // 找不到最小值，这是不可能的
 }
+
+// 另一种二分查找，基于labuladong的二分查找框架
+// 核心在于利用左右子区间的有序与否，不断逼近旋转点，旋转点也就是最小点
+// 不过好像和前面那种是一样的。
+// 原因在于 处理区间有序时 处理了 区间长度为1 的情况
+
+// 对于labuladong二分模板找target本身。
+// 比较nums[l]和nums[mid]，若左区间有序，则去右；否则去左。最后只剩一个元素，就是旋转点，也就是最小值
+func findMin5(nums []int) int {
+	// 特殊情况
+	n := len(nums)
+	if n == 0 {
+		return -1
+	} // 不存在，异常
+	if n == 1 {
+		return nums[0]
+	}
+
+	// 二分 模板2
+	l, r, mid := 0, n-1, 0 // 这里同样 r 得是 n-1 ， 避免索引越界
+	for l <= r {
+		// 注意，先得检查区间是否有序
+		if nums[l] <= nums[r] { // 当区间长度为1时取=号
+			return nums[l]
+		}
+
+		mid = (r-l)/2 + l
+		if l == r { // 最后逼近到长度为1，必然是旋转点
+			return nums[l]
+		}
+		if nums[l] <= nums[mid] { // 左区间有序
+			l = mid + 1 // mid必然不是旋转点   [mid+1:r]
+		} else { // 左区间无序，含有旋转点
+			r = mid // [l:mid]
+		}
+	}
+
+	// 不可能走到这里
+	return -1
+}
+
 ```
 
 ### 1.6 寻找旋转排序数组中的最小值II
@@ -718,11 +761,878 @@ func findMin(nums []int) int {
 向右查找：left = mid
 
 ```go
+// 二分查找 迭代版本 模板3
 
+// BinarySearchTp3 二分查找 迭代版本 模板3
+// 返回目标索引
+func BinarySearchTp3(nums []int, target int) int {
+	// 特殊情况
+	n := len(nums)
+	if len(nums) == 0 {
+		return -1
+	}
+
+	// 二分
+	l, r := 0, n-1
+	for l+1 < r { // 区间至少含有3个元素才进入。这意味着最后迭代结束后需要处理最后剩下的两个元素
+		mid := (r-l)/2 + l
+
+		if target == nums[mid] {
+			return mid
+		} else if target > nums[mid] {
+			l = mid // 尽管mid已经考察过，但是由于 l+1<r 的终止条件，必须将其包含进去
+		} else { // target < nums[mid]
+			r = mid
+		}
+	}
+
+	// 后处理 迭代结束时 l+1=r
+	if nums[l] == target {
+		return l
+	}
+	if nums[r] == target {
+		return r
+	}
+
+	return -1 // 没找到。 结束条件 l>r
+}
 ```
 
 ### 3.1 在排序数组中查找元素的第一个和最后一个位置
 
+```go
+// 给定一个按照升序排列的整数数组 nums，和一个目标值 target。找出给定目标值在数组中的开始位置和结束位置。
+
+// 你的算法时间复杂度必须是 O(log n) 级别。
+
+// 如果数组中不存在目标值，返回 [-1, -1]。
+
+// 示例 1:
+
+// 输入: nums = [5,7,7,8,8,10], target = 8
+// 输出: [3,4]
+// 示例 2:
+
+// 输入: nums = [5,7,7,8,8,10], target = 6
+// 输出: [-1,-1]
+
+///////////////////////////////////////////////
+
+// 就是找左边界和右边界
+// 那么其实可以先找出左边界 l
+// 再在[l:n]找右边界r
+
+func searchRange(nums []int, target int) []int {
+	// 特殊情况
+	n := len(nums)
+	if n == 0 {
+		return []int{-1, -1}
+	}
+
+	// 二分查找，找左边界
+	leftTargetIdx := bs(nums, target, true)
+	// 检查left的有效性
+	if leftTargetIdx == n || nums[leftTargetIdx] != target {
+		return []int{-1, -1}
+	}
+
+	// 接着寻找右边界
+	rightTargetIdx := bs(nums, target, false) - 1 // 为什么减一？思考下寻找右边界时bs最终会找到哪个位置：最后一个target的右邻
+
+	return []int{leftTargetIdx, rightTargetIdx}
+}
+
+// 这里其实使用的是模板2
+// seekLeft标记是寻找target左边界还是右边界
+func bs(nums []int, target int, seekLeft bool) int {
+	l, r, mid := 0, len(nums), 0 // 注意这里的r
+	for l < r {
+		mid = (r-l)/2 + l
+		if nums[mid] > target || (seekLeft && nums[mid] == target) { // 注意，如果是寻找左边界，即便等于target也要向左继续寻找
+			r = mid // mid还没排除嫌疑
+		} else {
+			l = mid + 1
+		}
+	}
+	// 后处理，剩下最后一个就是左边界。 对于寻找target右边界，l就是右边界
+	// 但是要注意的是这里返回的l还有可能是没找到target情况下返回的l，需作检查
+	return l
+}
+
+```
+
+### 3.2 找到K个最接近的元素
+
+使用第4节labuladong二分查找框架解。
+
+```go
+// 给定一个排序好的数组，两个整数 k 和 x，从数组中找到最靠近 x（两数之差最小）的 k 个数。返回的结果必须要是按升序排好的。如果有两个数与 x 的差值一样，优先选择数值较小的那个数。
+
+// 示例 1:
+
+// 输入: [1,2,3,4,5], k=4, x=3
+// 输出: [1,2,3,4]
+//  
+
+// 示例 2:
+
+// 输入: [1,2,3,4,5], k=4, x=-1
+// 输出: [1,2,3,4]
+//  
+
+// 说明:
+
+// k 的值为正数，且总是小于给定排序数组的长度。
+// 数组不为空，且长度不超过 104
+// 数组里的每个元素与 x 的绝对值不超过 104
+
+//////////////////////////////////////////////////////////
+
+// 思路：
+// 先二分查找找到target的左边界idx（注意不要直接按模板，如果nums[l]!=target返回l）
+// 再从idx向两边寻找比较。这时要使用双指针，来比较哪边的差值更小。差值一样的话左边排前面
+
+func findClosestElements(arr []int, k int, x int) []int {
+	// 特殊情况
+	n := len(arr)
+	if n == 0 || n < k {
+		return nil
+	}
+
+	// 二分，找到target左边界或左邻
+	idx := bsl(arr, x)
+	fmt.Println("idx=", idx)
+	if idx == n {
+		return arr[n-k:]
+	}
+	if idx == 0 {
+		return arr[:k]
+	}
+	// 现在以idx为界，分为两半，右侧以idx为起点，左侧以idx-1为起点， 向两边双指针
+	res := make([]int, k)
+	k1 := 0
+	l, r := idx-1, idx
+	for k1 < k {
+		// 两端都有剩余元素
+		if l >= 0 && r < n {
+			if x-arr[l] <= arr[r]-x { // 注意=时取左边的（更小）
+				res[k1] = arr[l]
+				l--
+			} else {
+				res[k1] = arr[r]
+				r++
+			}
+			k1++
+			continue
+		}
+		// 一端没有
+		if l >= 0 {
+			res[k1] = arr[l]
+			l--
+			k1++
+		}
+		if r < n {
+			res[k1] = arr[r]
+			r++
+			k1++
+		}
+	}
+
+	// 要求res升序排列
+	sort.Ints(res)
+
+	return res
+}
+
+func bsl(arr []int, target int) int {
+	l, r, mid := 0, len(arr), 0
+	for l <= r {
+		mid = (r-l)/2 + l
+		if arr[mid] >= target {
+			r = mid - 1 // 向左搜索
+		} else {
+			l = mid + 1 // 向右搜索
+		}
+	}
+	// l 可能有哪些可能？
+	// target比arr都小，则不断向左缩，最后arr[0]还是比target大，则r=-1，但是l=0. 也就是说target比arr都小，l=0
+	// target比arr都大，不断向右，最后arr[n-1]还是比target小，则l=n
+	// target存在于arr，则l=0~n-1
+	// target在arr区间范围内但不等于任何一个数，最后一次区间可能是target左邻也可能是右邻。
+	//    如果是左邻，那么l会增大到target右邻位置; 如果是右邻，则l就落在右邻位置
+
+	// 在本题，其实都可以直接返回
+	return l
+}
+
+/////////////////////////////////////////////////////
+
+// 解法二： 根据差值直接排序
+func findClosestElements2(arr []int, k int, x int) []int {
+	// 特殊情况
+	n := len(arr)
+	if n == 0 || n < k {
+		return nil
+	}
+
+	// 根据差值排序
+	sort.Slice(arr, func(i, j int) bool {
+		a, b := int(math.Abs(float64(arr[i]-x))), int(math.Abs(float64(arr[j]-x)))
+		if a == b {
+			return arr[i] < arr[j]
+		}
+		return a < b
+	})
+
+	// res升序
+	res := arr[:k]
+	sort.Ints(res)
+
+	return res
+}
+
+// https://leetcode-cn.com/problems/find-k-closest-elements/solution/pai-chu-fa-shuang-zhi-zhen-er-fen-fa-python-dai-ma/
+// 这篇题解提供了两种更好的解法
+```
+
+## 4. labuladong的二分查找模板
+
+吐槽： 上面的模板3坑我，LeetCode探索中给出的练习题明显也不会最后留两个数出来，浪费时间不是...
+
+看了labuladong的二分查找，我又觉得可以了...
+
+核心是： **明确搜索区间及边界的更新**
+
+直接给上结论框架（推导步骤见参考）：
+
+为了好记，我只使用**两端闭区间**进行二分查找。例如对于数组`nums`二分查找，则有`l, r = 0, len(nums)-1`
+
+### 4.1 寻找target的下标
+
+这个其实好理解，也就是前面的模板1
+
+```go
+func bs1(nums []int, target int) int {
+	l, r := 0, len(nums)-1 // 两端闭
+	for l <= r {           // 终止条件 l > r
+		mid := (r-l)/2 + l
+		if nums[mid] == target {
+			return mid
+		} else if nums[mid] > target {
+			r = mid - 1 // mid已排除	// 搜索区间 [l, mid-1]
+		} else { // nums[mid] < target
+			l = mid + 1 // mid已排除    // 搜索区间 [mid+1, r]
+		}
+	}
+	return -1 // 没找到
+}
+```
+
+### 4.2 寻找target的左边界
+
+```go
+func bs2(nums []int, target int) int {
+	l, r := 0, len(nums)-1 // 两端闭
+	for l <= r {           // 终止条件 l > r
+		mid := (r-l)/2 + l
+		if nums[mid] == target {
+			r = mid - 1 // 注意：搜索左边界时找到target并不直接返回，而是向左侧区间搜索		[l, mid-1]
+		} else if nums[mid] > target {
+			r = mid - 1 // mid已排除	[l, mid-1]
+		} else { // nums[mid] < target
+			l = mid + 1 // mid已排除    [mid+1, r]
+		}
+	}
+
+	// NOTICE: 如果target不存在，则返回的会是target的右邻
+	// l 可能有哪些可能？
+	// target比arr都小，则不断向左缩，最后arr[0]还是比target大，则r=-1，但是l=0. 也就是说target比arr都小，l=0
+	// target比arr都大，不断向右，最后arr[n-1]还是比target小，则l=n
+	// target存在于arr，则l=0~n-1
+	// target在arr区间范围内但不等于任何一个数，最后一次区间可能是target左邻也可能是右邻。
+	//    如果是左邻，那么l会增大到target右邻位置; 如果是右邻，则l就落在右邻位置
+
+
+	// 由于for循环退出条件为 l = r + 1 ，因此当target比nums元素都大时，会出现 l=len(nums)的情况
+	// l 停住时还要检查是否走到了target左边界，如果target不存在，那么就会nums[l]!=target
+	if l >= len(nums) || nums[l] != target {
+		return -1 // 没找到
+	}
+
+	return l // target左边界
+}
+
+// 简化一些
+
+func bs21(nums []int, target int) int {
+	l, r := 0, len(nums)-1 // 两端闭
+	for l <= r {           // 终止条件 l > r
+		mid := (r-l)/2 + l
+		if nums[mid] >= target {
+			r = mid - 1 // 注意：搜索左边界时找到target并不直接返回，而是向左侧区间搜索
+		} else { // nums[mid] < target
+			l = mid + 1 // mid已排除
+		}
+	}
+
+	// 由于for循环退出条件为 l = r + 1 ，因此当target比nums元素都大时，会出现 l=len(nums)的情况
+	// l 停住时还要检查是否走到了target左边界，如果target不存在，那么就会nums[l]!=target
+	if l >= len(nums) || nums[l] != target {
+		return -1 // 没找到
+	}
+
+	return l // target左边界
+}
+```
+
+
+### 4.3 寻找target的右边界
+
+```go
+func bs3(nums []int, target int) int {
+	l, r := 0, len(nums)-1 // 两端闭
+	for l <= r {           // 终止条件 l > r
+		mid := (r-l)/2 + l
+		if nums[mid] == target {
+			l = mid + 1 // 注意：搜索右边界时找到target并不直接返回，而是向右侧区间搜索		[mid+1, r]
+		} else if nums[mid] > target {
+			r = mid - 1 // mid已排除	[l, mid-1]
+		} else { // nums[mid] < target
+			l = mid + 1 // mid已排除    [mid+1, r]
+		}
+	}
+
+	// 由于for循环退出条件为 l = r + 1 ，因此当target比nums元素都小时，会出现 r=-1的情况
+	// r 停住时还要检查是否走到了target右边界，如果target不存在，那么就会nums[r]!=target
+	if r < 0 || nums[r] != target {
+		return -1 // 没找到
+	}
+
+	return r // target右边界， 也就是 l-1
+}
+
+// 简化一些
+
+func bs31(nums []int, target int) int {
+	l, r := 0, len(nums)-1 // 两端闭
+	for l <= r {           // 终止条件 l > r
+		mid := (r-l)/2 + l
+		if nums[mid] <= target {
+			l = mid + 1 // 注意：搜索右边界时找到target并不直接返回，而是向右侧区间搜索
+		} else { // nums[mid] > target
+			r = mid - 1 // mid已排除
+		}
+	}
+
+	// 由于for循环退出条件为 l = r + 1 ，因此当target比nums元素都小时，会出现 r=-1的情况
+	// r 停住时还要检查是否走到了target右边界，如果target不存在，那么就会nums[r]!=target
+	if r < 0 || nums[r] != target {
+		return -1 // 没找到
+	}
+
+	return r // target右边界， 也就是 l-1
+}
+
+```
+
+## 5. 更多二分查找例题
+
+### 5.1 寻找重复数
+
+```go
+// 给定一个包含 n + 1 个整数的数组 nums，其数字都在 1 到 n 之间（包括 1 和 n），可知至少存在一个重复的整数。假设只有一个重复的整数，找出这个重复的数。
+
+// 示例 1:
+
+// 输入: [1,3,4,2,2]
+// 输出: 2
+// 示例 2:
+
+// 输入: [3,1,3,4,2]
+// 输出: 3
+// 说明：
+
+// 不能更改原数组（假设数组是只读的）。
+// 只能使用额外的 O(1) 的空间。
+// 时间复杂度小于 O(n2) 。
+// 数组中只有一个重复的数字，但它可能不止重复出现一次。
+
+////////////////////////////////////////////////
+
+// 思考
+// 1. 不能更改原数组，不能使用额外空间。 那么就不能使用排序和哈希表两种方法
+// 2. 如果是只重复一次，还可以通过求和然后作差得到。然而这里也不能用
+// 3. 也不能通过不断将元素i放到以i-1其为下标的位置上来找出最后重复的元素，这样会改变数组
+// 4. 也就是说，只能通过遍历nums数组来得到答案
+//      4.1 可以想到的一种做法是循环检测与快慢指针，必然能指向相同元素。也确实复杂度低于O(n2)
+//      4.2 另一种可行的办法是二分查找。对于不含重复项的1~n，取中间元素mid后，必然有mid个<=mid的数。假如说统计到count个小于mid的数，如果count>mid，说明重复数的大小小于mid。
+
+// 二分查找 + 抽屉原理
+func findDuplicate(nums []int) int {
+    n := len(nums)
+    if n < 2 {return 0} // 不存在重复
+    
+    l, r, mid, count := 0, n, 0, 0
+    for l < r {
+        mid = (r-l)/2 +l 
+        count = 0
+        for _, v := range nums {
+            if v <= mid {count++}
+        }
+        
+        // 二分
+        if count > mid {
+            r = mid // mid也可能是重复的
+        } else {    // <
+            l = mid + 1 // mid及比mid小的数不可能是重复数
+        }
+    }
+    
+    // 最后l==r，必然是重复数
+    return l
+}
+
+// 注意！
+// 本题的另外一种解法：循环检测与快慢指针。很重要，参见lt287解法3.
+// 本质和 求一个有环链表环的入口 是一样的。先检测是否成环（用快慢指针），再用相同的速度，一个从相遇点，一个从起点出发，再次相遇就是重复
+```
+
+### 5.2 寻找比目标字母大的最小字母
+
+```go
+// 寻找比目标字母大的最小字母
+
+// 给定一个只包含小写字母的有序数组letters 和一个目标字母 target，寻找有序数组里面比目标字母大的最小字母。
+
+// 数组里字母的顺序是循环的。举个例子，如果目标字母target = 'z' 并且有序数组为 letters = ['a', 'b']，则答案返回 'a'。
+
+// 示例:
+
+// 输入:
+// letters = ["c", "f", "j"]
+// target = "a"
+// 输出: "c"
+
+// 输入:
+// letters = ["c", "f", "j"]
+// target = "c"
+// 输出: "f"
+
+// 输入:
+// letters = ["c", "f", "j"]
+// target = "d"
+// 输出: "f"
+
+// 输入:
+// letters = ["c", "f", "j"]
+// target = "g"
+// 输出: "j"
+
+// 输入:
+// letters = ["c", "f", "j"]
+// target = "j"
+// 输出: "c"
+
+// 输入:
+// letters = ["c", "f", "j"]
+// target = "k"
+// 输出: "c"
+// 注:
+
+// letters长度范围在[2, 10000]区间内。
+// letters 仅由小写字母组成，最少包含两个不同的字母。
+// 目标字母target 是一个小写字母。
+
+////////////////////////////////////////////////
+
+
+// 方法1：用[26]bool作哈希表（用map也行）记录letter中字母的存在情况。
+//       从target的右邻位开始找看存不存在，第一个存在的就是答案
+// 方法2： 线性扫描letters，找比目标字母大的第一个字母，返回它；
+//		 如果遍历一遍没找到比target大的，则返回letters[0]
+// 方法3： 二分查找:要找出target的右邻，而letters是排好序的，那么实际上相当于：
+//		 将target插入letters，将会插入在哪？我们要找的是target右邻
+// 		 要注意使用labuladong二分两端闭区间模板时，查找target右边界，如果target不存在，最后
+// 		 r就会落在第一个比target小的字母。不管存不存在，最后返回的都是r+1对应的那个字母，如果r+1
+// 注意，最后如果r+1越界了，需要 模len(letters) 一下
+
+// 二分查找
+func nextGreatestLetter(letters []byte, target byte) byte {
+	l, r, mid := 0, len(letters)-1, 0
+	for l <= r {
+		mid = (r-l)/2 + l
+		if letters[mid] <= target {
+			l = mid + 1
+		} else {
+			r = mid - 1
+		}
+	}
+	return letters[(r+1)%len(letters)]
+}
+
+// 尽管letters是循环的，可能有多个target，
+// 但是假定最后一个出现的target才是target的位置，我们要找的就是最后一个target的右邻
+
+```
+
+### 5.3 两个有序数组的中位数
+
+```go
+// 给定两个大小为 m 和 n 的有序数组 nums1 和 nums2。
+
+// 请你找出这两个有序数组的中位数，并且要求算法的时间复杂度为 O(log(m + n))。
+
+// 你可以假设 nums1 和 nums2 不会同时为空。
+
+// 示例 1:
+
+// nums1 = [1, 3]
+// nums2 = [2]
+
+// 则中位数是 2.0
+// 示例 2:
+
+// nums1 = [1, 2]
+// nums2 = [3, 4]
+
+// 则中位数是 (2 + 3)/2 = 2.5
+
+//////////////////////////////////////////////
+
+// 寻找两个有序数组的中位数
+
+// 暴力做的话可以用双指针法先合并两个有序数组，再取中位数
+// 要求时间复杂度O(log(m+n))
+// 基本和二分查找、分治这些有关了
+
+// 这道题应该这样思考：
+// 求一个数组的中位数取决于其长度n的奇偶性。
+// 若n奇数，则第(n+1)/2个是中位数； 若偶，则中位数为第(n/2)和第(n+1)/2个元素的平均数
+// 换言之： ** 有序数组中位数就是有序数组从小到大第k个数 ** （k的解释见上一行)
+//
+// 对于两个有序数组的中位数也是一样，只要将小于中位数的k-1个数给移除了
+// 剩下的第一个数就是中位数。
+//
+// 直接的按照这个思路，其实就是双指针在不断比较两个数组从头开始的元素，哪个小先踢哪个
+// 实现O((m+n)/2)的时间复杂度
+//
+// 那么要想办法加快这个剔除的过程。
+//
+// 例如
+// A: 1 3 5 7 9 11 12 13 14		长度9
+// B: 2 4 6 8 10				长度5
+// 合并长度14，那么中位数就是升序第7个数和第8个数的平均值。 这里肉眼可见是 (7+8)/2
+// 由于是找第14/2=7个数，可以先从A或B头部删除7/2=3个数，
+// 那么便是要删除 A的 1 3 5 或者 B的 2 4 6
+// 删哪个呢？
+// 删末尾更小的那个，5<6，所以删A的前三个。
+//
+// 其实看到这，就应该大致明白了，利用这个特性，可以加快删除进度而又不会错过真正的中位数
+// 现在A/B变成：
+// A: - - - 7 9 11 12 13 14		长度9
+// B: 2 4 6 8 10				长度5
+//
+// 删掉3个了，现在我们要定位到第7-3=4个数据，继续删，
+// 删 4/2=2个，由于 4<9 ，所以删除B头部的2个元素
+// 得到：
+// A: - - - 7 9 11 12 13 14		长度9
+// B: - - 6 8 10				长度5
+//
+// 现在删了5个了，我们要找当前的第4-2=2个元素，因此还要删 2/2=1个数据，因为6<7，所以删6
+// 好了，已经删掉6个元素了：
+// A: - - - 7 9 11 12 13 14		长度9
+// B: - - - 8 10				长度5
+//
+// 那么第7个和第8个数据怎么判断呢？A，B头部元素谁小谁是第七个
+// 因为 7<8所以第7个元素是7
+// 再将8和A中7后面的元素9比较，因此第8个元素就是8
+//
+// 还有一点，如果短的数组剩下的长度小于待删长度，那么整体删除，
+// 剩下的就是单个有序数组考虑第k小的问题了
+//
+// 核心： **折半删除** （当然这里讲的删除不是真删，指针掠过去就行了）
+//
+// 主要参考自题解https://leetcode-cn.com/problems/median-of-two-sorted-arrays/solution/man-hua-ru-guo-qi-ta-de-ti-jie-ni-kan-bu-dong-na-j/
+//
+// 好了本题解决，代码如下：
+
+func findMedianSortedArrays(nums1 []int, nums2 []int) float64 {
+	// 特殊
+	m, n := len(nums1), len(nums2)
+	if m == 0 && n == 0 { // 题目说明不会有这种情况
+		return 0
+	}
+	if m == 0 {
+		return medOfSortedArr(nums2)
+	}
+	if n == 0 {
+		return medOfSortedArr(nums1)
+	}
+
+	// 二分（折半删除）
+	total := m + n       // 总长度
+	k := (total + 1) / 2 // 对于total为奇数，第k个就是中位数；偶数的话是左中位数
+	// 调用findK返回第k小及第k+1小
+	kth, knext := findKthAndNext(nums1, nums2, 0, 0, k)
+	// fmt.Println(kth, knext)
+
+	if total%2 == 0 {
+		return (float64(kth) + float64(knext)) / 2
+	}
+	return float64(kth)
+}
+
+func medOfSortedArr(nums []int) float64 {
+	n := len(nums)
+	if n%2 == 0 { // 偶数
+		return (float64(nums[n/2-1]) + float64(nums[n/2])) / 2
+	}
+	return float64(nums[n/2])
+}
+
+// 找出第k小元素，以及其后一个， 也就是“主函数”中的left和其后一个元素
+// p1,p2是nums1,nums2游标(数组下标)，用来执行“删除”
+// k 是待找的第k小
+// 使用递归做法
+// 要注意k是第k个，转成代码时要减一，作为数组下标
+func findKthAndNext(nums1, nums2 []int, p1, p2, k int) (int, int) {
+
+	//fmt.Println(p1, p2, k)
+
+	// 始终保证如果会先空，则必是nums1。 这样可以省去很多if-else
+	len1, len2 := len(nums1)-p1, len(nums2)-p2 // 两个数组当前”剩余“的长度
+	if len1 > len2 {
+		return findKthAndNext(nums2, nums1, p2, p1, k)
+	}
+	// 如果nums1空了
+	if len1 == 0 {
+		return nums2[p2+k-1], nums2[p2+k] // kth （以p2开头的第k个）, knext，写个示例就清楚了
+	}
+
+	// 如果剩余待删的k变为1，那么返回kth和knext
+	if k == 1 {
+		kth, knext := 0, 0
+		if nums1[p1] <= nums2[p2] { // nums1第p1+1个数和nums2第p2+1个数作比较
+			kth = nums1[p1]
+			knext = nums2[p2]
+			if p1 < len(nums1)-1 && nums1[p1+1] < knext {
+				knext = nums1[p1+1]
+			}
+		} else {
+			kth = nums2[p2]
+			knext = nums1[p1]
+			//fmt.Println(kth, knext, "测试", p1, p2, k)
+			if p2 < len(nums2)-1 && nums2[p2+1] < knext {
+				knext = nums2[p2+1]
+			}
+		}
+		return kth, knext
+	}
+
+	// 折半删除，先定位到待删末尾
+	p1If := p1 + int(math.Min(float64(len1), float64(int(k/2)))) - 1
+	p2If := p2 + int(math.Min(float64(len2), float64(int(k/2)))) - 1
+	// 比较
+	if nums1[p1If] <= nums2[p2If] {
+		return findKthAndNext(nums1, nums2, p1If+1, p2, k-(p1If-p1+1))
+	}
+	return findKthAndNext(nums1, nums2, p1, p2If+1, k-(p2If-p2+1))
+}
+
+// 总结： 折半删除的思路很妙
+// 但是细节是魔鬼！！！！
+```
+
+### 5.4 找出第k小的距离对
+
+```go
+// 找出第k小的距离对
+
+// 给定一个整数数组，返回所有数对之间的第 k 个最小距离。一对 (A, B) 的距离被定义为 A 和 B 之间的绝对差值。
+
+// 示例 1:
+
+// 输入：
+// nums = [1,3,1]
+// k = 1
+// 输出：0
+// 解释：
+// 所有数对如下：
+// (1,3) -> 2
+// (1,1) -> 0
+// (3,1) -> 2
+// 因此第 1 个最小距离的数对是 (1,1)，它们之间的距离为 0。
+
+// 2 <= len(nums) <= 10000.
+// 0 <= nums[i] < 1000000.
+// 1 <= k <= len(nums) * (len(nums) - 1) / 2.
+
+// 根据限制条件，时间复杂度一般应不能高于O(n2)，空间复杂度不能为O(k)及以上
+
+// 思考：
+// 1. 暴力思路： 用数组存所有距离对（O(n!)空间）,
+// 再根据每个数对的距离进行排序（快排、堆排、优先队列等等，O(nlogn)）,自然找到第k小
+// 由于题给出len(nums)最大为10000；可想而知O(n!)肯定炸了
+// 2. 先将nums排序（O(nlogn)），再线性遍历两两相邻之间的差值绝对值，
+// 需要将绝对差值进行排序（并且是带索引的，能通过绝对差值找到原先的数对）
+// 绝对差值的排序可以使用堆，也可以利用快排特性实现O(n)。 总体O(nlogn),还能接受
+// 这是错的！！！k可能大于n!!!
+
+// 想不到比较好的办法，看题解：
+
+// 使用二分查找+双指针
+// 1. 先对nums排序
+// 2. 0是理论上可能的最小距离，最大距离则是nums第一个和最后一个的距离，记为top
+// 3. 对 [0,top]区间进行二分，得mid
+//    接着检查是否存在 >k 个数对，其距离 <mid
+//    如果存在，说明mid大了，则继续对 [0,mid-1]二分，反之去[mid+1,top]二分
+// 4. 那么，如何高效的计算有多少数对的距离 < mid呢？ 可以使用双指针，实现O(n)
+//
+// 有关二分查找：
+// 很容易理解: 【<mid】 【==mid】(若干数对) 【>mid】
+//
+// 时间复杂度 O(nlogn + nlogw)，w指最大的数对距离
+
+func smallestDistancePair(nums []int, k int) int {
+	// 1. 升序
+	sort.Ints(nums)
+	n := len(nums)
+	// 2. 二分查找. 寻找count最接近k，但是把mid稍一调高又会大于k的状态。停止时自然就是=k的位置
+	l, r, mid := 0, nums[n-1], 0
+	for l < r { // 终止条件 l==r
+		mid = (r-l)/2 + l
+		count := countLessEqualMid(nums, mid)
+		if count < k {
+			l = mid + 1 // [mid+1, r]
+		} else { // >=k // 不能排除mid的可能
+			r = mid // [l, mid]
+		}
+	}
+	return l
+}
+
+// 统计 <= mid 的数对个数
+func countLessEqualMid(nums []int, mid int) int {
+	count, start := 0, 0
+	for i := range nums { // 每一轮都是在找以nums[i]为更大值的所有符合条件的数对
+		for nums[i]-nums[start] > mid {
+			start++ // 起始位不断右移，直到[start,i]区间内的数对距离<=mid
+		}
+		count += i - start
+	}
+	return count
+}
+
+```
+
+### 5.5 分割数组的最大值 
+
+```go
+// 给定一个非负整数数组和一个整数 m，你需要将这个数组分成 m 个非空的连续子数组。设计一个算法使得这 m 个子数组各自和的最大值最小。
+
+// 注意:
+// 数组长度 n 满足以下条件:
+
+// 1 ≤ n ≤ 1000
+// 1 ≤ m ≤ min(50, n)
+// 示例:
+
+// 输入:
+// nums = [7,2,5,10,8]
+// m = 2
+
+// 输出:
+// 18
+
+// 解释:
+// 一共有四种方法将nums分割为2个子数组。
+// 其中最好的方式是将其分为[7,2,5] 和 [10,8]，
+// 因为此时这两个子数组各自的和的最大值为18，在所有情况中最小。
+
+//////////////////////////////////////////////////////////
+
+// 思考：
+// 1. 乍一看很难找到比较好的办法，只好试试暴力求解
+// 对于长度为n的数组，分成m个连续非空区间，要想找出所有的分割组合（C(n,m)），时间/空间复杂度太过爆炸
+// 暴力行不通了
+// 2. 像这种暴力行不通的，组合数巨大的情况，一般想办法从贪心、二分等方向考虑。
+// 这里可以思考下二分（当然也有点贪心的味道）
+// 将求m个子区间的和的最大值最小，转化成求所有划分出的组合中寻找第1小的组合
+// 由于数组是固定的，分成m个区间，不管怎么分，总和还是数组的和，要想所有区间的和的最大值最小
+// 理想情况下，这个值就是 sum(nums) / m （每个区间的和相等）
+// 但是一般情况下，可能无法保证每个子区间的和都相等，
+// 由于是非负整数数组，可以考虑理论上的最小值0，
+// 而理论上的最大值max，为了简便起见，选择为 nums总和。
+// 要注意这个理论上的上下限都是取不到的，只是为了缩减搜索范围
+// 现在，我们对 0~sum(nums)进行二分，得到mid
+//
+// 对了由于是分成m个子区间，理论上最小的”子区间的和的最大值“应该是max(nums)，因为一个子区间至少要包含一个数据
+// 所以现在二分的上下限就是 max(nums)~sum(nums)
+//
+// 得到mid，mid就是当前”试探“的 ”子区间的和的最大值“
+// 然后我们把 mid 作为nums数组的子区间的和的最大值(这里不确定能分多少个子区间)
+// 要统计的就是按mid为上限nums所能拆分出的子区间数count
+//
+// 如果count > m 说明 mid小了；
+// count < m 则说明mid大了
+// 如果恰好就分了m个呢？就是我们要找的答案吗？
+// 不是的，可以想象一下，能以mid为上限恰好可以分m个子区间的情况（或者说满足该条件的mid）
+// 有若干个。
+// 我们要找的是这些mid中的最小值，也就是左边界。
+// 这里直接套用二分查找寻找target左边界的模板就好
+//
+// 那么外层框架就得到了，但是怎么高效地统计 ”和小于mid的子区间“ 数呢？
+// 贪心法，每一个子区间都选到恰好<=mid，再往右加一个就超过mid
+
+func splitArray(nums []int, m int) int {
+	// 就不检查特殊情况了，比较繁琐，而且题目有约束
+
+	// 1. 线性遍历得到二分的上下限 O(n)
+	n, max, sum := len(nums), 0, 0
+	for i := 0; i < n; i++ {
+		if nums[i] > max {
+			max = nums[i]
+		}
+		sum += nums[i]
+	}
+	// 2. 二分找符合条件的mid的”左边界“（最小者）
+	l, r, mid, cnt := max, sum, 0, 0
+	for l <= r {
+		mid = (r-l)/2 + l
+		cnt = countSubArrays(nums, mid)
+		if cnt > m { // mid小了
+			l = mid + 1     // [mid+1, r]
+		} else { // mid大或者恰好
+			r = mid - 1     // [l, mid-1]   // mid恰好时仍需要向左区间搜索，如果最后左区间搜索不到，会通过l=mid+1回来的
+		}
+	}
+	// 最后ｌ停在我们要求的”mid左边界“
+	return l
+}
+
+// 【贪心】 统计nums 以mid为“子区间和的最大值” 所能划分的 ”最少的“子区间数
+func countSubArrays(nums []int, mid int) int {
+	n := len(nums)
+	sumSub := 0 // 子区间和
+	count := 1  // 子区间数，初始为1，因为最后一个子区间走不到count++
+	for i := 0; i < n; i++ {
+		if sumSub+nums[i] > mid {
+			count++
+			sumSub = nums[i]
+		} else {
+			sumSub += nums[i]
+		}
+	}
+	return count
+}
+
+// 体会：
+// 当暴力的搜索区间太大，甚至动态规划也感觉复杂度太高的情况，一定要尝试想想
+// 二分查找、贪心
+// 有的题也要考虑排序。
+```
+
 ## 参考
 
 - [LeetCode 探索二分查找](https://leetcode-cn.com/explore/learn/card/binary-search/)
+- [labuladong的二分查找算法详解](https://leetcode-cn.com/problems/find-first-and-last-position-of-element-in-sorted-array/solution/er-fen-cha-zhao-suan-fa-xi-jie-xiang-jie-by-labula/)

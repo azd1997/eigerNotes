@@ -8,19 +8,19 @@ keywords: ["Debug", "Test", "表格驱动测试", "性能测试", "代码覆盖�
 
 ---
 
-### 1.测试介绍
+## 1.测试介绍
 
 ​        尽量测试，避免调试
 
 ![1562666185342](/images/1562666185342.png)
 
-### 2. 例子
+## 2. 例子
 
 ​		这里使用一道算法题作为调试和测试的例子：
 
 ​		求取字符串中最长的含有不重复字符的子字符串的长度。
 
-#### 2.1 开始之前
+### 2.1 开始之前
 
 先了解下Go语言字符串的处理机制
 
@@ -80,7 +80,7 @@ Process finished with exit code 0
 
 得出结论：直接遍历string，其实是按rune进行遍历。当字符串只包含ASCII字符时，三种遍历方法是一样的。rune是Go的可变长度字符表示，表示中文时一个rune代表了三个byte。
 
-#### 2.2 寻找最长不重复子串算法实现
+### 2.2 寻找最长不重复子串算法实现
 
 V1版本只考虑英文字符串，V2版本则增加了对中文字符串的支持。
 
@@ -169,7 +169,7 @@ func main() {
 Process finished with exit code 0
 ```
 
-### 3. Debug
+## 3. Debug
 
 Goland自带调试工具，用例如下：
 
@@ -177,15 +177,14 @@ Goland自带调试工具，用例如下：
 
 显然Debug需要开发者去不断设置断点找出问题所在。
 
-### 4.传统测试
+## 4.传统测试
 
 传统测试其实就是上面代码中的类型，只不过专门写了个测试函数，而测试数据一样被写在测试函数中。
 
 也就是说，**传统测试测试数据和测试逻辑混在一起，出错信息不明确**，而且图中例子一旦有一例报错退出了，后边的数据也不会再执行
 
 ![1562675642285](/images/1562675642285.png)
-
-### 5.表格驱动测试
+## 5.表格驱动测试
 
 表格驱动测试的特点：
 
@@ -196,7 +195,7 @@ Goland自带调试工具，用例如下：
 
 ![1562676056644](/images/1562676056644.png)
 
-### 6. 测试简单例子
+## 6. 测试简单例子
 
 Go语言测试用法为：创建xx_test.go，创建TestXxx(t *testing.T){}，此即为测试函数。而且要注意测试函数名TestXxxx这里Test后跟的第一个字母必须大写。
 
@@ -278,7 +277,7 @@ FAIL
 Process finished with exit code 1
 ```
 
-### 7. 代码覆盖率
+## 7. 代码覆盖率
 
 运行测试函数时可以选择`Run 'TestFunc' with Coverage`可以得到测试函数的代码覆盖率信息：
 
@@ -295,7 +294,7 @@ $ go test -coverprofile=c.out  // 将代码覆盖检测情况输出
 $ go tool cover -html=c.out  //将c.out以html形式呈现
 ```
 
-### 8. Benchmark
+## 8. Benchmark
 
 前面的Test测试指的是测试代码有无漏洞，而Benchmark测试则指性能测试。
 
@@ -328,7 +327,7 @@ Process finished with exit code 0
 
 执行1000000遍，每次的平均时间为1771ns。
 
-### 9.使用pprof可视化性能检测
+## 9.使用pprof可视化性能检测
 
 现在思考为什么每次执行花1771ns的时间，时间主要花费在哪里？可以怎么去提升运行效率？
 
@@ -352,11 +351,11 @@ $ go tool pprof cpu.out  //进入pprof交互式命令行工具
 
 框越大说明占用CPU时间越长。显然这里map操作是最耗时的，其次是rune解码。
 
-### 10. 优化性能
+## 10. 优化性能
 
 既然已经指出map操作和rune操作耗时较长，想办法优化它：
 
-#### 10.1 优化过程
+### 10.1 优化过程
 
 先试下用slice替换map
 
@@ -579,13 +578,13 @@ Process finished with exit code 0
 
 提示：我是通过创建多个函数来进行方法的比较，也可以在一个函数上修改，通过版本控制来进行版本切换。
 
-#### 10.2 感想
+### 10.2 感想
 
 分析算法运行性能要根据不同的数据规模来决定；
 
 很多时候性能开销主要在io操作而不在数据操作，所以可以牺牲一些数据操作的性能来换取代码的可读性
 
-### 11. http测试
+## 11. http测试
 
 基于02_UnifiedErrorHandling.md中的http服务器的部分，现在进行http服务器的测试。先把完整代码移过来，并作代码的分离。
 
@@ -694,7 +693,7 @@ func HandleListFileV4(w http.ResponseWriter, r *http.Request) error {
 }
 ```
 
-#### 11.1 errWrapper函数测试
+### 11.1 errWrapper函数测试
 
 创建errWrapper_test.go，准备编写测试代码。
 
@@ -831,7 +830,7 @@ Process finished with exit code 0
 
 这回没有问题了，说明我们的错误包装器正确，测试没有问题。
 
-#### 11.2 开启服务器测试
+### 11.2 开启服务器测试
 
 上一节模拟了url请求（使用假的Request和Response），这一节则通过开启httpserver的方式来实现这个测试。这两种方法间测试的粒度不同，前一种方法只测试函数体内的这些代码，而启用服务器做测试则测试了整个服务器。前者更快，更像个单元测试。
 
@@ -882,9 +881,9 @@ PASS
 Process finished with exit code 0
 ```
 
-### 12. 生成文档及示例代码
+## 12. 生成文档及示例代码
 
-#### 12.1 使用go doc生成及查看代码文档
+### 12.1 使用go doc生成及查看代码文档
 
 准备好queue.go：
 
@@ -947,7 +946,7 @@ func (q *Queue) IsEmpty() bool
 
 ```
 
-#### 12.2 使用go doc查看标准库文档
+### 12.2 使用go doc查看标准库文档
 
 用法基本一样，而且不需要注意路径问题，只要在GOPATH下即可。例如：
 
@@ -958,7 +957,7 @@ func Println(a ...interface{}) (n int, err error)
     Println formats using the default formats for its operands and writes to standard output. Spaces are always added between operands and a newline is appended. It returns the number of bytes written and any write error encountered.
 ```
 
-#### 12.3 使用godoc查看文档
+### 12.3 使用godoc查看文档
 
 godoc不仅支持前面go doc类似的命令行文档显示，有很多显示文档的方式，`GOPATH`下输入`godoc -help`即可查看其信息及命令介绍。
 
@@ -974,7 +973,7 @@ godoc不仅支持前面go doc类似的命令行文档显示，有很多显示文
 
 ![1563011372720](/images/1563011372720.png)
 
-#### 12.4 添加注释完善文档
+### 12.4 添加注释完善文档
 
 前面得到的文档都没有介绍，只有类型或者定义。要想有介绍，需要自己在包内类型、函数定义前添加注释。
 
@@ -1046,7 +1045,7 @@ func (q *Queue) Push(v int) {
 
 这个功能很适合给函数添加示例，并易于阅读。
 
-#### 12.5 生成示例代码
+### 12.5 生成示例代码
 
 将示例代码直接写到注释中是可以的，只不过不适合阅读（如果示例代码很长的话）。现在来介绍如何生成示例代码。更好用的一种方法：
 
@@ -1094,7 +1093,7 @@ Example函数其实也是可以执行的，只不过需要以上面所示的加/
 
 这就是我们想要的文档示例了。
 
-#### 12.6 总结
+### 12.6 总结
 
 注意！想要让注释和示例能被识别，必须注意格式
 
@@ -1103,4 +1102,21 @@ Example函数其实也是可以执行的，只不过需要以上面所示的加/
 **注释中添加e.g示例： `// + SPACE + TAB + [e.g. 示例注释]`**
 
 **示例代码添加输出：`// + SPACE + Output:`**
+
+## 13. go test 命令
+
+```go
+go test .   // 执行当前目录下所有_test，路径可省略
+go test aaa_test.go  // 指定某个测试文件
+go test -run TestXXX // 指定某个测试用例（某个测试方法）
+
+go test -bench .  // 对指定路径(这里是当前目录)下所有_test文件中的基准测试
+go test -bench BenchmarkXXX
+```
+
+## 14. Delve调试工具
+
+这是第三方调试工具，可执行文件名叫做`dlv.exe`或者`dlv`
+
+VSCODE-GO用的就是delve。
 
