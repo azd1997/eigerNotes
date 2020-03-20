@@ -504,3 +504,61 @@ func help1(root *TreeNode, sum int, path *[]int, res *[][]int) {
 // pps: 警惕slice传参带来的风险
 ```
 
+### 1.5 路径总和III
+
+### 1.6 从前序与中序遍历序列构造二叉树
+
+```go
+根据一棵树的前序遍历与中序遍历构造二叉树。
+
+注意:
+你可以假设树中没有重复的元素。
+
+例如，给出
+
+前序遍历 preorder = [3,9,20,15,7]
+中序遍历 inorder = [9,3,15,20,7]
+返回如下的二叉树：
+
+    3
+   / \
+  9  20
+    /  \
+   15   7
+
+//////////////////////////////////////////
+
+/**
+ * Definition for a binary tree node.
+ * type TreeNode struct {
+ *     Val int
+ *     Left *TreeNode
+ *     Right *TreeNode
+ * }
+ */
+func buildTree(preorder []int, inorder []int) *TreeNode {
+	// 递归停止
+	if len(preorder) == 0 || len(inorder) == 0 {
+		return nil
+	} // 这两个数组始终等长
+
+	// 当前区间的子树树根的值为 preorder[0]，再线性遍历找到树根在inorder中的位置
+	// 据此可以将区间划分为左右子树的区间(先分inorder，然后可确定preorder)，并可递归下去
+
+	root := &TreeNode{Val: preorder[0]}
+	rootIdx := findIdx(inorder, root.Val)
+    //fmt.Println(preorder, inorder, root.Val, rootIdx)
+	root.Left = buildTree(preorder[1:rootIdx+1], inorder[:rootIdx])
+	root.Right = buildTree(preorder[rootIdx+1:], inorder[rootIdx+1:])
+	return root
+}
+
+// 线性遍历找目标值的下标
+func findIdx(nums []int, target int) int {
+	for i:=len(nums)-1; i>=0; i-- {
+		if nums[i] == target {return i}
+	}
+	return -1
+}
+
+```
