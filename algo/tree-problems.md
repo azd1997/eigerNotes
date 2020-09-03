@@ -562,3 +562,513 @@ func findIdx(nums []int, target int) int {
 }
 
 ```
+
+### 1.7 从中序与后序遍历序列构造二叉树
+
+LeetCode 106
+
+```go
+// 题意与上一题相近，这里不再给出
+
+///////////////////////////////////////////////
+
+// 对于后序遍历，头结点位于postorder末尾
+// 然后根据这个头结点值 遍历inorder得到头结点位置，进而分出左右子树
+
+func buildTree(inorder []int, postorder []int) *TreeNode {
+	if len(inorder) == 0 {
+		return nil
+	}
+	if len(inorder) == 1 { // inorder和postorder长度是一样的
+		return &TreeNode{Val: inorder[0]}
+	}
+
+	root := &TreeNode{Val: postorder[len(postorder)-1]}
+	rootIdx := getIdx(inorder, root.Val)
+	root.Left = buildTree(
+		inorder[:rootIdx],
+		postorder[:rootIdx], // 这种地方就画图，会清晰许多
+	)
+	root.Right = buildTree(
+		inorder[rootIdx+1:],
+		postorder[rootIdx:len(postorder)-1],
+	)
+	return root
+}
+
+func getIdx(inorder []int, val int) int {
+	for i := 0; i < len(inorder); i++ {
+		if inorder[i] == val {
+			return i
+		}
+	}
+	return -1
+}
+```
+
+### 1.8 填充每个节点的下一个右侧节点指针
+
+LeetCode 116
+
+```go
+给定一个完美二叉树，其所有叶子节点都在同一层，每个父节点都有两个子节点。二叉树定义如下：
+
+struct Node {
+  int val;
+  Node *left;
+  Node *right;
+  Node *next;
+}
+填充它的每个 next 指针，让这个指针指向其下一个右侧节点。如果找不到下一个右侧节点，则将 next 指针设置为 NULL。
+
+初始状态下，所有 next 指针都被设置为 NULL。
+
+ 
+
+示例：
+
+
+
+输入：{"$id":"1","left":{"$id":"2","left":{"$id":"3","left":null,"next":null,"right":null,"val":4},"next":null,"right":{"$id":"4","left":null,"next":null,"right":null,"val":5},"val":2},"next":null,"right":{"$id":"5","left":{"$id":"6","left":null,"next":null,"right":null,"val":6},"next":null,"right":{"$id":"7","left":null,"next":null,"right":null,"val":7},"val":3},"val":1}
+
+输出：{"$id":"1","left":{"$id":"2","left":{"$id":"3","left":null,"next":{"$id":"4","left":null,"next":{"$id":"5","left":null,"next":{"$id":"6","left":null,"next":null,"right":null,"val":7},"right":null,"val":6},"right":null,"val":5},"right":null,"val":4},"next":{"$id":"7","left":{"$ref":"5"},"next":null,"right":{"$ref":"6"},"val":3},"right":{"$ref":"4"},"val":2},"next":null,"right":{"$ref":"7"},"val":1}
+
+解释：给定二叉树如图 A 所示，你的函数应该填充它的每个 next 指针，以指向其下一个右侧节点，如图 B 所示。
+ 
+
+提示：
+
+你只能使用常量级额外空间。
+使用递归解题也符合要求，本题中递归程序占用的栈空间不算做额外的空间复杂度。
+
+/////////////////////////////////////////////////
+
+// 明显是层序遍历，使用基于队列的迭代层序遍历实现
+// 但是题目要求O(1)的额外空间
+
+// 1. 使用队列类的辅助结构进行层序遍历 O(N)/O(N)
+func connect(root *Node) *Node {
+	if root == nil {
+		return nil
+	}
+
+	// 首先设置root的next
+	root.Next = nil
+	queue := []*Node{root}
+	var tmpQ []*Node
+	num := 0
+	for len(queue) != 0 {
+		num = len(queue)
+		tmpQ = make([]*Node, 0, 2*num) // 下层有当前层结点数的2倍
+		// 考虑结点在队列中是树左边的结点则在队列数组的左边 的这样的存取顺序
+		for i := 0; i < num; i++ {
+			// 设置Next
+			if i < num-1 {
+				queue[i].Next = queue[i+1]
+			} else {
+				queue[i].Next = nil
+			}
+			// 添加下一层。注意顺序
+			if queue[i].Left != nil {
+				tmpQ = append(tmpQ, queue[i].Left)
+			}
+			if queue[i].Right != nil {
+				tmpQ = append(tmpQ, queue[i].Right)
+			}
+		}
+		// 更新queue
+		queue = tmpQ
+	}
+	return root
+}
+
+// 2. 不使用额外空间的解法
+// https://leetcode-cn.com/problems/populating-next-right-pointers-in-each-node/solution/tian-chong-mei-ge-jie-dian-de-xia-yi-ge-you-ce-j-3/
+// 有两种类型的Next需要设置，一种是同一父节点，另一种则是相邻父节点
+func connect2(root *Node) *Node {
+	if root == nil {
+		return nil
+	}
+
+	// 游标
+	leftmost := root
+
+	for leftmost.Left != nil {
+		head := leftmost
+		for head != nil {
+			// 第1类Next ： 相同父节点
+			head.Left.Next = head.Right
+			// 第2类Next : 相邻父节点
+			if head.Next != nil {
+				head.Right.Next = head.Next.Left
+			}
+
+			// head在同一层上后移
+			head = head.Next
+		}
+		// leftmost移到下一层
+		leftmost = leftmost.Left
+	}
+	return root
+}
+```
+
+### 1.9 填充每个节点的下一个右侧结点指针II
+
+LeetCode 117
+
+```go
+和上一题相比，不再给出完美二叉树，而是普通的二叉树
+
+//////////////////////////////////////////////////////
+
+// 题目不再给 完美二叉树 ，而是 普通二叉树
+// 其实解法和上一题几乎是一样的：
+// 使用队列的层序遍历解法代码完全不用修改
+// 常量空间解法则需要不停向右寻找非空结点作为Next
+// 1. 使用队列类的辅助结构进行层序遍历 O(N)/O(N)
+func connect(root *Node) *Node {
+	if root == nil {
+		return nil
+	}
+
+	// 首先设置root的next
+	root.Next = nil
+	queue := []*Node{root}
+	var tmpQ []*Node
+	num := 0
+	for len(queue) != 0 {
+		num = len(queue)
+		tmpQ = make([]*Node, 0, 2*num) // 下层有当前层结点数的2倍
+		// 考虑结点在队列中是树左边的结点则在队列数组的左边 的这样的存取顺序
+		for i := 0; i < num; i++ {
+			// 设置Next
+			if i < num-1 {
+				queue[i].Next = queue[i+1]
+			} else {
+				queue[i].Next = nil
+			}
+			// 添加下一层。注意顺序
+			if queue[i].Left != nil {
+				tmpQ = append(tmpQ, queue[i].Left)
+			}
+			if queue[i].Right != nil {
+				tmpQ = append(tmpQ, queue[i].Right)
+			}
+		}
+		// 更新queue
+		queue = tmpQ
+	}
+	return root
+}
+
+// 2. 不使用额外空间的解法
+// https://leetcode-cn.com/problems/populating-next-right-pointers-in-each-node-ii/solution/tian-chong-mei-ge-jie-dian-de-xia-yi-ge-you-ce-j-4/
+
+// 全局游标
+var leftmost, prev *Node
+
+func connect2(root *Node) *Node {
+	if root == nil {
+		return nil
+	}
+
+	leftmost, prev = root, nil // 重置全局变量，避免提交时影响到其他测例
+	cur := leftmost            // 游标
+
+	for leftmost != nil {
+
+		prev = nil
+		cur = leftmost
+		leftmost = nil
+
+		for cur != nil {
+			processchild(cur.Left)
+			processchild(cur.Right)
+			cur = cur.Next // 移动到本层的下一个节点
+		}
+
+	}
+	return root
+}
+
+func processchild(child *Node) {
+	if child != nil {
+		if prev != nil {
+			prev.Next = child // 如果本层之前存在节点，也就是prev!=nil，则将prev.Next指向当前child
+		} else {
+			leftmost = child // 说明这个child是本层第一个非空结点，也就是leftmost
+		}
+
+		prev = child
+	}
+}
+```
+
+### 1.10 二叉搜索树的最近公共祖先
+
+LeetCode 235
+
+```go
+给定一个二叉搜索树, 找到该树中两个指定节点的最近公共祖先。
+
+百度百科中最近公共祖先的定义为：“对于有根树 T 的两个结点 p、q，最近公共祖先表示为一个结点 x，满足 x 是 p、q 的祖先且 x 的深度尽可能大（一个节点也可以是它自己的祖先）。”
+
+//////////////////////////////////////////////////////
+
+// 1. 和二叉树的LCA一样的处理
+func lowestCommonAncestor(root, p, q *TreeNode) *TreeNode {
+	if root == nil || root == p || root == q {
+		return root
+	}
+
+	left, right := lowestCommonAncestor(root.Left, p, q), lowestCommonAncestor(root.Right, p, q)
+	if left == nil {
+		return right
+	} else if right == nil {
+		return left
+	} else {
+		return root
+	}
+}
+
+// 2. 利用搜索树的数值排序性质
+func lowestCommonAncestor2(root, p, q *TreeNode) *TreeNode {
+	if root == nil || root == p || root == q {
+		return root
+	}
+
+	// 缩减了一些搜索空间
+	rv, pv, qv := root.Val, p.Val, q.Val
+	if rv > pv && rv > qv { // 比两目标都大，去左子树找
+		return lowestCommonAncestor2(root.Left, p, q)
+	} else if rv < pv && rv < qv {
+		return lowestCommonAncestor2(root.Right, p, q)
+	} else {
+		return root // 找到LCA
+	}
+}
+
+```
+
+### 1.11 二叉树的最近公共祖先
+
+LeetCode 236
+
+```go
+给定一个二叉树, 找到该树中两个指定节点的最近公共祖先。
+
+///////////////////////////////////////////////////////
+
+// Definition for a binary tree node.
+type TreeNode struct {
+	Val   int
+	Left  *TreeNode
+	Right *TreeNode
+}
+
+// 最近公共祖先必然是 自下而上 第一个子树中同时包含两个target 的结点
+// 考虑一个辅助的递归函数，每次当其子树中搜索到其中一个target时，就往上返回true
+// 当自下而上第一个 Left返回了true，right也返回了true的时候，就找到了 最近公共祖先 LCA
+// 这个返回的true/false可以用*TreeNode的nil与非nil来表示
+// 这里考虑true时返回内含的某个target(p或q)，false返回nil
+
+func lowestCommonAncestor1(root, p, q *TreeNode) *TreeNode {
+	if root == nil {
+		return nil
+	} // 找到底都没找到target
+	if root == p || root == q { // 这里这么写： 因为是后序遍历，所以在下面找到的target一定会先返回
+		return root
+	} // 找到target之一
+
+	// 当前结点非空，则继续找当前节点的子树（后序遍历）
+	left := lowestCommonAncestor1(root.Left, p, q)
+	right := lowestCommonAncestor1(root.Right, p, q)
+	// 处理当前。
+	if left != nil && right != nil {
+		return root
+	}
+	if left != nil {
+		return left
+	}
+	if right != nil {
+		return right
+	}
+	return nil
+}
+
+// 2. 使用辅助函数的写法，啰嗦了一些
+
+func lowestCommonAncestor2(root, p, q *TreeNode) *TreeNode {
+	lca, _ := help(root, p, q)
+	return lca
+}
+
+// 当找到LCA，则返回的结点不为空，而是LCA.
+// 当LCA!=nil时，布尔值无意义
+func help(root, p, q *TreeNode) (*TreeNode, bool) {
+	if root == nil {
+		return nil, false
+	} // 找到底都没找到target
+
+	// 当前结点非空，则继续找当前节点的子树（后序遍历）
+	count := 0 // count=2就是得到两个true
+	// 左
+	lca1, left := help(root.Left, p, q)
+	if lca1 != nil {
+		return lca1, true
+	}
+	if left == true {
+		count++
+	}
+	// 右
+	lca2, right := help(root.Right, p, q)
+	if lca2 != nil {
+		return lca2, true
+	}
+	if right == true {
+		count++
+	}
+	// 中
+	if root == p || root == q {
+		count++
+	}
+	if count == 2 {
+		return root, true
+	}
+	if count == 1 {
+		return nil, true
+	}
+	return nil, false
+}
+
+// 上面这个解法是正确的，但是很明显可以看出，它在找到LCA时不能及时返回，只能不断回去重新到达根节点处才真正返回给调用者
+
+```
+
+### 1.12 二叉树的序列化与反序列化
+
+```go
+序列化是将一个数据结构或者对象转换为连续的比特位的操作，进而可以将转换后的数据存储在一个文件或者内存中，同时也可以通过网络传输到另一个计算机环境，采取相反方式重构得到原数据。
+
+请设计一个算法来实现二叉树的序列化与反序列化。这里不限定你的序列 / 反序列化算法执行逻辑，你只需要保证一个二叉树可以被序列化为一个字符串并且将这个字符串反序列化为原始的树结构。
+
+示例: 
+
+你可以将以下二叉树：
+
+    1
+   / \
+  2   3
+     / \
+    4   5
+
+序列化为 "[1,2,3,null,null,4,5]"
+提示: 这与 LeetCode 目前使用的方式一致，详情请参阅 LeetCode 序列化二叉树的格式。你并非必须采取这种方式，你也可以采用其他的方法解决这个问题。
+
+说明: 不要使用类的成员 / 全局 / 静态变量来存储状态，你的序列化和反序列化算法应该是无状态的。
+
+//////////////////////////////////////////
+
+/**
+ * Definition for a binary tree node.
+ * type TreeNode struct {
+ *     Val int
+ *     Left *TreeNode
+ *     Right *TreeNode
+ * }
+ */
+
+type Codec struct {}
+
+func Constructor() Codec {
+    return Codec{}
+}
+
+// Serializes a tree to a single string.
+func (this *Codec) serialize(root *TreeNode) string {
+	if root==nil {return ""}
+
+	queue := []*TreeNode{root}
+	encoded := ""
+	for len(queue) != 0 {	// 队列非空
+		root = queue[0]; queue = queue[1:]	// 队头出队
+		if root != nil {
+			queue = append(queue, root.Left, root.Right)	// 将左右子节点从队尾入队
+			encoded += strconv.Itoa(root.Val) + ","
+		} else {
+			encoded += "null,"
+		}
+	}
+
+	// 去除右边的"null,"，没必要存储
+	encoded = trimRightNulls(encoded)
+	// 去除末尾","，加上左右括号
+	encoded = "[" + encoded[:len(encoded)-1] + "]"
+    fmt.Println(encoded)
+
+	return encoded    
+}
+
+func trimRightNulls(data string) string {
+	target := "null,"
+	size := len(target)	//5
+	for len(data)>size && data[len(data)-size:]==target {
+		data = data[:len(data)-size]
+	}
+	return data
+}
+
+// Deserializes your encoded data to tree.
+func (this *Codec) deserialize(encoded string) *TreeNode {    
+    if len(encoded) == 0 {return nil}
+    // 去除左右括号
+	encoded = encoded[1:len(encoded)-1]
+	// 边界判断
+	if len(encoded)==0 {return nil}
+	// 按","分割字符串
+	items := strings.Split(encoded, ",")
+	// 构造根节点
+	rootVal, _ := strconv.Atoi(items[0])	// 第一个值不可能是null
+	root := &TreeNode{Val:rootVal}
+
+	// 构建辅助队列
+	queue := []*TreeNode{root}
+	i := 0
+	for {
+		if i++; i >= len(items) {		// i先+1，如果超界，则退出
+			break
+		}
+
+		node := queue[0]; queue = queue[1:]		// 弹出队头
+
+		if items[i] != "null" {
+			leftVal, _ := strconv.Atoi(items[i])
+			node.Left = &TreeNode{Val:leftVal}
+			queue = append(queue, node.Left)
+		}
+
+		if i++; i >= len(items) {		// i先+1，如果超界，则退出
+			break
+		}
+		if items[i] != "null" {
+			rightVal, _ := strconv.Atoi(items[i])
+			node.Right = &TreeNode{Val:rightVal}
+			queue = append(queue, node.Right)
+		}
+	}
+
+	return root    
+}
+
+
+/**
+ * Your Codec object will be instantiated and called as such:
+ * obj := Constructor();
+ * data := obj.serialize(root);
+ * ans := obj.deserialize(data);
+ */
+```
+
+### 1.13 序列化和反序列化二叉搜索树
+
