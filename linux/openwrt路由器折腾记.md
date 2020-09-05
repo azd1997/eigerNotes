@@ -77,7 +77,7 @@ config wifi-iface
 
 不管怎么样，既然是进程被杀掉导致掉线（scutclient在拨号成功之后需要定期发送心跳包到校园网认证服务器，不然就掉线了），scutclient在启动时是`scutclient 账户 密码 &`后台形式运行，（关于前台进程、后台进程、守护进程三者自行百度）还是有可能因为捕捉SIGHUP信号而被挂起最后被杀掉，最简单的办法就是使用`nohup`来忽略SIGHUP信号
 ```
-nohup scutclient 账户 密码 IP &
+nohup scutclient 账户 密码 &
 ```
 
 openwrt上默认没有nohup，需要从其软件包仓库下载：
@@ -120,6 +120,8 @@ STOP=15
 
 auth() {
 
+        # 这里的uci get xxxx 是说在/etc/config/下有scutclient这个配置文件，$(uci get xxxx) 是从配置文件中读配置
+        # -eq 就是 不等于
         if [ $(uci get scutclient.@option[0].enable) -eq 0 ]
         then
                 exit
